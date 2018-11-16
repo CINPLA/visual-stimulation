@@ -1,0 +1,44 @@
+package:
+  name: visualstimulation
+  version: {{ environ.get("GIT_STRING", "0.0.0_custom")|replace("v", "")|replace("-", "_") }}
+
+source:
+  path: ..
+
+build:
+  noarch: python
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - setuptools
+    - numpy
+    - matplotlib
+    - seaborn
+    - elephant
+    - neo
+    - quantities
+
+test:
+  source_files:
+    - visualstimulation
+  requires:
+    - pytest
+    - coverage
+    - codecov
+  imports:
+    - visualstimulation
+  commands:
+    - coverage run --source visualstimulation -m py.test -s
+    - coverage report
+    - codecov
+
+about:
+  home: https://github.com/CINPLA/visual-stimulation
+  license: GPLv3
+license_file: LICENSE
