@@ -34,7 +34,7 @@ def plot_tuning_overview(trials, spontan_rate=None):
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
     import seaborn
-    from exana.stimulus.tools import (make_orientation_trials,
+    from visualstimulation.tools import (make_orientation_trials,
                                       compute_orientation_tuning,
                                       compute_osi)
     fig = plt.figure()
