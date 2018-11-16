@@ -59,6 +59,7 @@ def rescale_orients(trials, unit=pq.deg):
 
 
 def convert_quantity_scalar_to_string(value):
+    # TODO: write tests
     """
     converts quantity scalar to string
 
@@ -75,6 +76,7 @@ def convert_quantity_scalar_to_string(value):
 
 
 def convert_string_to_quantity_scalar(value):
+    # TODO: write tests
     """
     converts string to quantity scalar
 
