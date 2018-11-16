@@ -3,8 +3,68 @@ import quantities as pq
 import pytest
 
 
+from visualstimulation.tools import (compute_osi,
+                                     compute_dsi,
+                                     compute_circular_variance,
+                                     compute_spontan_rate,
+                                     )
+
+
+def test_circular_variance():
+    rates = 1.23*np.ones(8)*pq.Hz
+    orients = np.linspace(0, 315, 8)*pq.deg
+    assert abs(compute_circular_variance(rates, orients)-1) < 1e-12
+
+    rates = np.zeros(8)*pq.Hz
+    rates[4] = 12.4*pq.Hz
+    orients = np.linspace(0, 315, 8)*pq.deg
+    assert abs(compute_circular_variance(rates, orients)) < 1e-12
+
+    rates = np.array([1, 2, 3])*pq.Hz
+    orients = np.array([0, 45, 90])*pq.deg
+    assert abs(compute_circular_variance(rates, orients)-0.52859547920896832) < 1e-12
+
+
+def test_compute_osi():
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([1, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients) - 1/3) < 1e-12
+
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients) - 1/5) < 1e-12
+
+    orients = np.arange(0, 2*np.pi, np.pi/4)*pq.rad
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients) - 1/5) < 1e-12
+
+    orients = np.arange(0, 315, 40)*pq.deg
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    with pytest.warns(UserWarning):
+        assert abs(compute_osi(rates, orients) - 1/5) < 1e-12
+
+
+def test_compute_dsi():
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([1, 1, 2, 1, 1, 3, 1, 1])*pq.Hz
+    assert abs(compute_dsi(rates, orients) - 1/2) < 1e-12
+
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([3, 1, 4, 1, 1, 2, 3, 1])*pq.Hz
+    assert abs(compute_dsi(rates, orients) - 1/7) < 1e-12
+
+    orients = np.arange(0, 2*np.pi, np.pi/4)*pq.rad
+    rates = np.array([3, 1, 4, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_dsi(rates, orients) - 3/5) < 1e-12
+
+    orients = np.arange(0, 315, 40)*pq.deg
+    rates = np.array([3, 1, 2, 1, 2.3, 2, 1, 1])*pq.Hz
+    with pytest.warns(UserWarning):
+        assert abs(compute_dsi(rates, orients) - 0.7/5.3) < 1e-12
+
+
 def test_wrap_angle_360():
-    from exana.stimulus.tools import (wrap_angle)
+    from visualstimulation.helper import wrap_angle
     angles = np.array([85.26, -437.34, 298.14, 57.47, -28.98, 681.25, -643.99,
                        43.71, -233.82, -549.63, 593.7, 164.48, 544.05, -52.66,
                        79.87, -21.11, 708.31, 29.45, 279.14, -586.88])
@@ -18,7 +78,7 @@ def test_wrap_angle_360():
 
 
 def test_wrap_angle_2pi():
-    from exana.stimulus.tools import (wrap_angle)
+    from visualstimulation.helper import wrap_angle
     angles = np.array([-7.15, -7.3, 7.74, 4.68, -9.33, 1.32, 4.18, 3.49,
                        8.21, 1.43, -0.96, 6.63, 1.32, 9.66, -10.57, -7.17,
                        1.84, -10.24, -7.31, -11.71, -1.82, 2.85, 1.99, -5.11,
@@ -36,7 +96,7 @@ def test_wrap_angle_2pi():
 
 def test_make_stimulus_off_epoch():
     from neo.core import Epoch
-    from exana.stimulus.tools import (make_stimulus_off_epoch)
+    from visualstimulation.tools import (make_stimulus_off_epoch)
 
     times = np.linspace(0, 10, 11) * pq.s
     durations = np.ones(len(times)) * pq.s
@@ -75,7 +135,7 @@ def test_make_stimulus_off_epoch():
 def test_compute_orientation_tuning():
     from neo.core import SpikeTrain
     import quantities as pq
-    from exana.stimulus.tools import (make_orientation_trials,
+    from visualstimulation.tools import (make_orientation_trials,
                                       compute_orientation_tuning)
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
@@ -99,8 +159,8 @@ def test_compute_orientation_tuning():
 
 def test_make_orientation_trials():
     from neo.core import SpikeTrain
-    from exana.stimulus.tools import (make_orientation_trials,
-                                      _convert_string_to_quantity_scalar)
+    from visualstimulation.tools import (make_orientation_trials,
+                                         convert_string_to_quantity_scalar)
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
                          orient=315. * pq.deg),
@@ -118,7 +178,7 @@ def test_make_orientation_trials():
     for (key, value), trial, orient in zip(orient_trials.items(),
                                            sorted_trials,
                                            sorted_orients):
-        key = _convert_string_to_quantity_scalar(key)
+        key = convert_string_to_quantity_scalar(key)
         assert(key == orient.magnitude)
         for t, st in zip(value, trial):
             assert((t == st).all())
@@ -130,7 +190,7 @@ def test_make_orientation_trials():
 def test_rescale_orients():
     from neo.core import SpikeTrain
     import quantities as pq
-    from exana.stimulus.tools import _rescale_orients
+    from visualstimulation.helper import rescale_orients
 
     trials = [SpikeTrain(np.arange(0, 10, 1.)*pq.s, t_stop=10*pq.s,
                          orient=0 * pq.deg),
@@ -139,7 +199,7 @@ def test_rescale_orients():
               SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
                          orient=315 * pq.deg)]
     scaled_trials = trials.copy()
-    _rescale_orients(scaled_trials[:])
+    rescale_orients(scaled_trials[:])
     assert(scaled_trials is not trials)
     for t, st in zip(trials, scaled_trials):
         orient = list(t.annotations.values())[0].rescale(pq.deg)
@@ -160,7 +220,7 @@ def test_rescale_orients():
                          orient=np.pi/3 * pq.rad)]
 
     scaled_trials = trials.copy()
-    _rescale_orients(scaled_trials[:], unit=pq.rad)
+    rescale_orients(scaled_trials[:], unit=pq.rad)
     assert(scaled_trials is not trials)
     for t, st in zip(trials, scaled_trials):
         orient = list(t.annotations.values())[0].rescale(pq.rad)
