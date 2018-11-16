@@ -100,7 +100,7 @@ def compute_orientation_tuning(orient_trials):
         sorted stimulus orientations
     '''
     from elephant.statistics import mean_firing_rate
-    from visualstimulation.tools import make_orientation_trials
+    from visualstimulation.analysis import make_orientation_trials
     from visualstimulation.helper import convert_string_to_quantity_scalar
 
     unit_orients = pq.deg

@@ -34,9 +34,10 @@ def plot_tuning_overview(trials, spontan_rate=None):
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
     import seaborn
-    from visualstimulation.tools import (make_orientation_trials,
-                                      compute_orientation_tuning,
-                                      compute_osi)
+    from visualstimulation.analysis import (make_orientation_trials,
+                                            compute_orientation_tuning,
+                                            compute_osi)
+
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 2, 1)
