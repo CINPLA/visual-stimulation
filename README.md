@@ -1,2 +1,18 @@
+[![Build Status](https://travis-ci.org/CINPLA/visual-stimulation.svg?branch=dev)](https://travis-ci.org/CINPLA/visual-stimulation)
+[![codecov](https://codecov.io/gh/CINPLA/visual-stimulation/branch/dev/graph/badge.svg)](https://codecov.io/gh/CINPLA/visual-stimulation)
+
+
 # visual-stimulation
-Analysis of visual stimulation e.g. drifting gratings and stuff
+Analysis for experiments with visual stimulation e.g. drifting gratings.
+
+
+### Dependencies
+
+- `python >=3.5`
+- `numpy`
+- `scipy`
+- `matplotlib`
+- `seaborn`
+- `elephant`
+- `neo`
+- `quantities`
