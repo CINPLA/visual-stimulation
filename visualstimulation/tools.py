@@ -1,7 +1,6 @@
 import numpy as np
 import quantities as pq
 import warnings
-from visualstimulation.helper import *
 
 
 def compute_circular_variance(rates, orients):
@@ -37,7 +36,7 @@ def compute_dsi(rates, orients):
     out : float
         direction selectivity index
     """
-    from visualstimulation.tools import wrap_angle
+    from visualstimulation.helper import wrap_angle, find_nearest
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -68,7 +67,7 @@ def compute_osi(rates, orients):
     out : float
         orientation selectivity index
     """
-    from visualstimulation.tools import wrap_angle
+    from visualstimulation.helper import wrap_angle, find_nearest
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -84,7 +83,48 @@ def compute_osi(rates, orients):
     return (R_pref - R_ortho) / (R_pref + R_ortho)
 
 
+def compute_orientation_tuning(orient_trials):
+    '''
+    Calculates the mean firing rate for each orientation
+
+    Parameters
+    ----------
+    trials : collections.OrderedDict
+        OrderedDict with orients as keys and trials as values.
+
+    Returns
+    -------
+    rates : quantity array
+        average rates
+    orients : quantity array
+        sorted stimulus orientations
+    '''
+    from elephant.statistics import mean_firing_rate
+    from visualstimulation.tools import make_orientation_trials
+    from visualstimulation.helper import convert_string_to_quantity_scalar
+
+    unit_orients = pq.deg
+    unit_rates = pq.Hz
+    orient_count = len(orient_trials)
+
+    rates = np.zeros((orient_count)) * unit_rates
+    orients = np.zeros((orient_count)) * unit_orients
+
+    for i, (orient, trials) in enumerate(orient_trials.items()):
+        orient = convert_string_to_quantity_scalar(orient)
+        rate = 0 * unit_rates
+
+        for trial in trials:
+            rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
+
+        rates[i] = rate / len(trials)
+        orients[i] = orient.rescale(unit_orients)
+
+    return rates, orients
+
+
 def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.deg):
+    # TODO: write tests
     """
     Use non-linear least squares to fit a function to
     orientation tuning data.
@@ -127,7 +167,7 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
 
 
 def compute_spontan_rate(chxs, stim_off_epoch):
-    # TODO: test
+    # TODO: write tests
     '''
     Calculates spontaneous firing rate
 
@@ -168,48 +208,10 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     return rates
 
 
-def compute_orientation_tuning(orient_trials):
-    from visualstimulation.tools import (make_orientation_trials,
-                                         convert_string_to_quantity_scalar)
-    '''
-    Calculates the mean firing rate for each orientation
-
-    Parameters
-    ----------
-    trials : collections.OrderedDict
-        OrderedDict with orients as keys and trials as values.
-
-    Returns
-    -------
-    rates : quantity array
-        average rates
-    orients : quantity array
-        sorted stimulus orientations
-    '''
-    from elephant.statistics import mean_firing_rate
-
-    unit_orients = pq.deg
-    unit_rates = pq.Hz
-    orient_count = len(orient_trials)
-
-    rates = np.zeros((orient_count)) * unit_rates
-    orients = np.zeros((orient_count)) * unit_orients
-
-    for i, (orient, trials) in enumerate(orient_trials.items()):
-        orient = convert_string_to_quantity_scalar(orient)
-        rate = 0 * unit_rates
-
-        for trial in trials:
-            rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
-
-        rates[i] = rate / len(trials)
-        orients[i] = orient.rescale(unit_orients)
-
-    return rates, orients
-
-
 def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
                  kernel=None, search_stop=None, sampling_period=None):
+    # TODO: write tests
+    warnings.warn("This function is not tested")
     assert trials != unit
     import neo
     import elephant
@@ -260,6 +262,7 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
 #                      functions for organizing data
 ###############################################################################
 def add_orientation_to_trials(trials, orients):
+    # TODO: write tests
     """
     Adds annotation 'orient' to trials
 
@@ -275,6 +278,7 @@ def add_orientation_to_trials(trials, orients):
 
 
 def make_stimulus_trials(chxs, stim_epoch):
+    # TODO write tests
     '''
     makes stimulus trials for every units (good) in each channel
 
@@ -332,6 +336,11 @@ def make_orientation_trials(trials, unit=pq.deg):
         OrderedDict with orients as keys and trials as values.
     """
     from collections import defaultdict, OrderedDict
+    from visualstimulation.helper import (rescale_orients,
+                                          convert_quantity_scalar_to_string,
+                                          convert_string_to_quantity_scalar
+                                          )
+
     sorted_trials = defaultdict(list)
     rescale_orients(trials, unit)
 
