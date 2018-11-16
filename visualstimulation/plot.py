@@ -37,7 +37,6 @@ def plot_tuning_overview(trials, spontan_rate=None):
     from visualstimulation.analysis import (make_orientation_trials,
                                             compute_orientation_tuning,
                                             compute_osi)
-
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 2, 1)

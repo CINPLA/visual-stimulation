@@ -7,17 +7,17 @@ from setuptools import setup, find_packages
 long_description = open("README.md").read()
 
 install_requires = [
-    'numpy>=1.9',
+    'numpy',
     'scipy',
-    'astropy',
-    'pandas>=0.14.1',
+    'matplotlib',
+    'seaborn',
     'elephant',
-    'matplotlib']
+    'neo',
+    'quantities',
+]
+
 extras_require = {
-    'testing': ['pytest'],
-    'docs': ['numpydoc>=0.5',
-             'sphinx>=1.2.2',
-             'sphinx_rtd_theme']
+    'testing': ['pytest']
 }
 
 setup(
