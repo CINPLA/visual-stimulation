@@ -12,7 +12,7 @@ install_requires = [
     'matplotlib',
     'seaborn',
     'elephant',
-    'python-neo',
+    'neo-python',
     'quantities',
 ]
 
