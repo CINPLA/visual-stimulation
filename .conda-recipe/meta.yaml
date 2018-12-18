@@ -21,7 +21,7 @@ requirements:
     - matplotlib
     - seaborn
     - elephant
-    - neo
+    - python-neo
     - quantities
 
 test:
