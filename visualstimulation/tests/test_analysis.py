@@ -66,8 +66,8 @@ def test_compute_dsi():
 def test_compute_orientation_tuning():
     from neo.core import SpikeTrain
     import quantities as pq
-    from visualstimulation.analysis import (make_orientation_trials,
-                                            compute_orientation_tuning)
+    from visualstimulation.analysis import compute_orientation_tuning
+    from visualstimulation.utils import make_orientation_trials
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
                          orient=315. * pq.deg),
@@ -90,7 +90,7 @@ def test_compute_orientation_tuning():
 
 def test_make_orientation_trials():
     from neo.core import SpikeTrain
-    from visualstimulation.analysis import make_orientation_trials
+    from visualstimulation.utils import make_orientation_trials
     from visualstimulation.helper import convert_string_to_quantity_scalar
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
@@ -120,7 +120,7 @@ def test_make_orientation_trials():
 
 def test_make_stimulus_off_epoch():
     from neo.core import Epoch
-    from visualstimulation.analysis import (make_stimulus_off_epoch)
+    from visualstimulation.utils import (make_stimulus_off_epoch)
 
     times = np.linspace(0, 10, 11) * pq.s
     durations = np.ones(len(times)) * pq.s

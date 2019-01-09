@@ -5,6 +5,34 @@ import numpy as np
 import neo
 
 
+def make_stimulus_off_epoch(epo, include_boundary=False):
+    '''
+    Creates a neo.Epoch of off periods.
+    Parameters
+    ----------
+    epo : neo.Epoch
+        stimulus epoch
+    include_boundary :
+        add 0 to be first off period
+    Returns
+    ------
+    out : neo.Epoch
+    '''
+
+    from neo.core import Epoch
+    times = epo.times[:-1] + epo.durations[:-1]
+    durations = epo.times[1:] - times
+    if(include_boundary):
+        times = np.append([0], times)*pq.s
+        durations = np.append(epo.times[0], durations)*pq.s
+
+    off_epoch = Epoch(labels=[None]*len(times),
+                      durations=durations,
+                      times=times)
+
+    return off_epoch
+
+
 def make_orientation_trials(trials, unit=pq.deg):
     """
     Makes trials based on stimulus orientation

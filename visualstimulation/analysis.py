@@ -100,7 +100,6 @@ def compute_orientation_tuning(orient_trials):
         sorted stimulus orientations
     '''
     from elephant.statistics import mean_firing_rate
-    from visualstimulation.analysis import make_orientation_trials
     from visualstimulation.helper import convert_string_to_quantity_scalar
 
     unit_orients = pq.deg
@@ -185,6 +184,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     '''
     from collections import defaultdict
     from elephant.statistics import mean_firing_rate
+    from visualstimulation.utils import make_spiketrain_trials
 
     rates = defaultdict(dict)
     unit_rates = pq.Hz
@@ -211,6 +211,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
 def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
                  kernel=None, search_stop=None, sampling_period=None):
     # TODO: write tests
+    from visualstimulation.utils import make_spiketrain_trials
     warnings.warn("This function is not tested")
     assert trials != unit
     import neo
@@ -256,126 +257,3 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
             else:
                 t0 = lat_time
         return np.nan, rate
-
-
-###############################################################################
-#                      functions for organizing data
-###############################################################################
-def add_orientation_to_trials(trials, orients):
-    # TODO: write tests
-    """
-    Adds annotation 'orient' to trials
-
-    Parameters
-    ----------
-    trials : list of neo.SpikeTrains
-    orients : quantity array
-        orientation array
-    """
-    assert len(trials) == len(orients)
-    for trial, orient in zip(trials, orients):
-        trial.annotations["orient"] = orient
-
-
-def make_stimulus_trials(chxs, stim_epoch):
-    # TODO write tests
-    '''
-    makes stimulus trials for every units (good) in each channel
-
-    Parameters
-    ----------
-    chxs : list
-        list of neo.core.ChannelIndex
-    stim_epoch : neo.core.Epoch
-        stimulus epoch
-
-    Returns
-    -------
-    out : defaultdict(dict)
-        trials[channel_index_name][unit_id] = list of spike_train trials.
-    '''
-    from collections import defaultdict
-    stim_trials = defaultdict(dict)
-
-    for chx in chxs:
-        for un in chx.units:
-            cluster_group = un.annotations.get('cluster_group') or 'noise'
-            if cluster_group.lower() != "noise":
-                sptr = un.spiketrains[0]
-                trials = make_spiketrain_trials(epoch=stim_epoch,
-                                                t_start=0 * pq.s,
-                                                t_stop=stim_epoch.durations,
-                                                spike_train=sptr)
-                unit_id = un.annotations["cluster_id"]
-                stim_trials[chx.name][unit_id] = trials
-
-    # Add orientation value to each trial as annotation
-    for chx in stim_trials.values():
-        for trials in chx.values():
-            add_orientation_to_trials(trials, stim_epoch.labels)
-
-    return stim_trials
-
-
-def make_orientation_trials(trials, unit=pq.deg):
-    """
-    Makes trials based on stimulus orientation
-
-    Parameters
-    ----------
-    trials : neo.SpikeTrains
-        list of spike trains where orientation is given as
-        annotation 'orient' (quantity scalar) on each spike train.
-    unit : Quantity, optional
-        scaling unit (default is degree) used for orients
-        used as keys in dictionary.
-
-    Returns
-    -------
-    trials : collections.OrderedDict
-        OrderedDict with orients as keys and trials as values.
-    """
-    from collections import defaultdict, OrderedDict
-    from visualstimulation.helper import (rescale_orients,
-                                          convert_quantity_scalar_to_string,
-                                          convert_string_to_quantity_scalar
-                                          )
-
-    sorted_trials = defaultdict(list)
-    rescale_orients(trials, unit)
-
-    for trial in trials:
-        orient = trial.annotations["orient"]
-        key = convert_quantity_scalar_to_string(orient)
-        sorted_trials[key].append(trial)
-
-    return OrderedDict(sorted(sorted_trials.items(),
-                              key=lambda x: convert_string_to_quantity_scalar(x[0]).magnitude))
-
-
-def make_stimulus_off_epoch(epo, include_boundary=False):
-    '''
-    Creates a neo.Epoch of off periods.
-    Parameters
-    ----------
-    epo : neo.Epoch
-        stimulus epoch
-    include_boundary :
-        add 0 to be first off period
-    Returns
-    ------
-    out : neo.Epoch
-    '''
-
-    from neo.core import Epoch
-    times = epo.times[:-1] + epo.durations[:-1]
-    durations = epo.times[1:] - times
-    if(include_boundary):
-        times = np.append([0], times)*pq.s
-        durations = np.append(epo.times[0], durations)*pq.s
-
-    off_epoch = Epoch(labels=[None]*len(times),
-                      durations=durations,
-                      times=times)
-
-    return off_epoch
