@@ -4,10 +4,10 @@ import pytest
 
 
 from visualstimulation.analysis import (compute_osi,
-                                     compute_dsi,
-                                     compute_circular_variance,
-                                     compute_spontan_rate,
-                                     )
+                                        compute_dsi,
+                                        compute_circular_variance,
+                                        compute_spontan_rate,
+                                        )
 
 
 def test_circular_variance():
@@ -67,7 +67,7 @@ def test_compute_orientation_tuning():
     from neo.core import SpikeTrain
     import quantities as pq
     from visualstimulation.analysis import (make_orientation_trials,
-                                         compute_orientation_tuning)
+                                            compute_orientation_tuning)
 
     trials = [SpikeTrain(np.arange(0, 10, 2)*pq.s, t_stop=10*pq.s,
                          orient=315. * pq.deg),

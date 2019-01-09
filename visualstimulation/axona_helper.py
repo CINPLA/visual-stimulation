@@ -3,6 +3,8 @@ import quantities as pq
 import exdir
 import numpy as np
 import neo
+
+
 ################################################################################
 # From old expipe_plugin_cinpla
 ################################################################################
@@ -16,12 +18,11 @@ def generate_stim_group_and_epoch(action):
 
     # generate stimulus groups
     generate_blank_group(exdir_path, grating["blank"]["timestamps"])
-    generate_key_event_group(exdir_path, keys=keys["keys"],
-                                          timestamps=keys["timestamps"])
+    generate_key_event_group(exdir_path, keys=keys["keys"], timestamps=keys["timestamps"])
     generate_grating_stimulus_group(exdir_path,
-                                                 data=grating["grating"]["data"],
-                                                 timestamps=grating["grating"]["timestamps"],
-                                                  mode=grating["grating"]["mode"])
+                                    data=grating["grating"]["data"],
+                                    timestamps=grating["grating"]["timestamps"],
+                                    mode=grating["grating"]["mode"])
 
     # generate stimulus epoch
     generate_grating_stimulus_epoch(exdir_path,
@@ -52,7 +53,7 @@ def get_raw_inp_data(inp_group):
     '''
     event_types = inp_group["event_types"].data
     timestamps = pq.Quantity(inp_group["timestamps"].data,
-    inp_group["timestamps"].attrs["unit"])
+                             inp_group["timestamps"].attrs["unit"])
     values = inp_group["values"].data
 
     return event_types, timestamps, values
@@ -250,7 +251,7 @@ def make_orientation_trials(trials, unit=pq.deg):
         OrderedDict with orients as keys and trials as values.
     """
     from collections import defaultdict, OrderedDict
-    from  visualstimulation.helper import convert_quantity_scalar_to_string, rescale_orients, convert_string_to_quantity_scalar
+    from visualstimulation.helper import convert_quantity_scalar_to_string, rescale_orients, convert_string_to_quantity_scalar
     sorted_trials = defaultdict(list)
     rescale_orients(trials, unit)
 
@@ -275,6 +276,7 @@ def add_orientation_to_trials(trials, orients):
     assert len(trials) == len(orients)
     for trial, orient in zip(trials, orients):
         trial.annotations["orient"] = orient
+
 
 def generate_grating_stimulus_group(exdir_path, data, timestamps, mode="None"):
     '''
@@ -426,7 +428,6 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
     else:
         t_stops = t_stop
         assert len(epoch.times) == len(t_stops), 'epoch.times and t_stops have different size'
-
 
     if not isinstance(epoch, neo.Epoch):
         raise TypeError('Expected "neo.Epoch" got "' + str(type(epoch)) + '"')
