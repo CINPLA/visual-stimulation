@@ -36,7 +36,7 @@ def compute_dsi(rates, orients):
     out : float
         direction selectivity index
     """
-    from visualstimulation.helper import wrap_angle, find_nearest
+    from .helper import wrap_angle, find_nearest
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -67,7 +67,7 @@ def compute_osi(rates, orients):
     out : float
         orientation selectivity index
     """
-    from visualstimulation.helper import wrap_angle, find_nearest
+    from .helper import wrap_angle, find_nearest
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -100,7 +100,7 @@ def compute_orientation_tuning(orient_trials):
         sorted stimulus orientations
     '''
     from elephant.statistics import mean_firing_rate
-    from visualstimulation.helper import convert_string_to_quantity_scalar
+    from .helper import convert_string_to_quantity_scalar
 
     unit_orients = pq.deg
     unit_rates = pq.Hz

@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from .utils import make_orientation_trials
 
 def polar_tuning_curve(orients, rates, ax=None, params={}):
     """
@@ -36,15 +36,14 @@ def plot_tuning_overview(trials, spontan_rate=None):
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
     import seaborn
-    from visualstimulation.analysis import (make_orientation_trials,
-                                            compute_orientation_tuning,
-                                            compute_osi)
+    from .analysis import (compute_orientation_tuning, compute_osi)
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 2, 1)
     trials = make_orientation_trials(trials)
     rates, orients = compute_orientation_tuning(trials)
-    preferred_orient, index = compute_osi(rates, orients)
+    index = orients[np.argmax(rates)]
+    preferred_orient = compute_osi(rates, orients)
 
     ax1.set_title("Preferred orientation={},\n OSI={}".format(preferred_orient,
                                                               round(index, 2)))
@@ -74,7 +73,6 @@ def orient_raster_plots(trials):
         list of neo.SpikeTrain
     """
     import seaborn
-    from visualstimulation.analysis import make_orientation_trials
     orient_trials = make_orientation_trials(trials)
     col_count = 4
     row_count = int(np.ceil(len(orient_trials))/col_count)
