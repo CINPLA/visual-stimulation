@@ -1,5 +1,4 @@
-from .openephys import *
-import visualstimulation as vs
+import matplotlib.pyplot as plt
 import exdir.plugins.quantities
 import exdir.plugins.git_lfs
 import pathlib
@@ -7,6 +6,10 @@ import expipe
 import exdir
 import neo
 import os
+
+from .openephys import *
+from .utils import make_spiketrain_trials, add_orientation_to_trials
+from .plot import orient_raster_plots, plot_tuning_overview
 
 
 class visual_data:
@@ -37,15 +40,13 @@ class visual_data:
             ps_epoch = self.epochs[1]       # psychopy
 
             for s_id, spiketrain in enumerate(spiketrains):
-                trials = vs.make_spiketrain_trials(spiketrain, oe_epoch)
-                vs.add_orientation_to_trials(trials, orients)
+                trials = make_spiketrain_trials(spiketrain, oe_epoch)
+                add_orientation_to_trials(trials, orients)
 
                 orf_path = os.path.join(channel_path, "{}_{}_orrient_raster.png".format(channel, s_id))
-                orient_raster_fig = vs.orient_raster_plots(trials)
-                # orient_raster_fig.savefig(orf_path)
+                orient_raster_fig = orient_raster_plots(trials)
+                orient_raster_fig.savefig(orf_path)
 
                 tf_path = os.path.join(channel_path, "{}_{}_tuning.png".format(channel, s_id))
-                tuning_fig = vs.plot_tuning_overview(trials)
-                # tuning_fig.savefig(tf_path)
-                plt.show(orient_raster_fig)
-                plt.show(tuning_fig)
+                tuning_fig = plot_tuning_overview(trials)
+                tuning_fig.savefig(tf_path)
