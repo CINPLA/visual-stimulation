@@ -7,13 +7,14 @@ import neo
 import os
 
 
-def load_spiketrains(data_path, channel_idx):
-    io = neo.ExdirIO(data_path, plugins=[exdir.plugins.quantities, exdir.plugins.git_lfs.Plugin(verbose=True)])
-    blk = io.read_block()
-    channels = blk.channel_indexes
-    chx = channels[channel_idx]
-    sptr = [u.spiketrains[0] for u in chx.units]
-    return sptr
+def get_data_path(action):
+    action_path = action._backend.path
+    project_path = action_path.parent.parent
+    print(project_path)
+    # data_path = action.data['main']
+    data_path = str(pathlib.Path(pathlib.PureWindowsPath(action.data['main'])))
+    print(data_path)
+    return project_path / data_path
 
 
 def load_epochs(data_path):
@@ -24,11 +25,10 @@ def load_epochs(data_path):
     return epochs
 
 
-def get_data_path(action):
-    action_path = action._backend.path
-    project_path = action_path.parent.parent
-    print(project_path)
-    # data_path = action.data['main']
-    data_path = str(pathlib.Path(pathlib.PureWindowsPath(action.data['main'])))
-    print(data_path)
-    return project_path / data_path
+def load_spiketrains(data_path, channel_idx):
+    io = neo.ExdirIO(data_path, plugins=[exdir.plugins.quantities, exdir.plugins.git_lfs.Plugin(verbose=True)])
+    blk = io.read_block()
+    channels = blk.channel_indexes
+    chx = channels[channel_idx]
+    sptr = [u.spiketrains[0] for u in chx.units]
+    return sptr

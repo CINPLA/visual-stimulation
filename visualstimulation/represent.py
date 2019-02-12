@@ -12,41 +12,40 @@ from .utils import make_spiketrain_trials, add_orientation_to_trials
 from .plot import orient_raster_plots, plot_tuning_overview
 
 
-class visual_data:
-    def __init__(self, project_path, action_id, n_channel=8, outpath="."):
-        self.id_path = os.path.join(outpath, str(action_id))
-        try:
-            os.mkdir(self.id_path)
-        except:
-            print("Path already exists: {}".format(str(self.id_path)))
-        
-        self.action_id = action_id
-        self.n_channel = n_channel
+def osi_analysis(project_path, action_id, n_channel=8):
+    # Define project tree
+    project = expipe.get_project(project_path)
+    action = project.actions[action_id]
+    data_path = get_data_path(action)
+    epochs = load_epochs(data_path)
 
-        self.project = expipe.get_project(project_path)
-        self.action = self.project.actions[action_id]
-        self.data_path = get_data_path(self.action)
-        self.epochs = load_epochs(self.data_path)
+    # Create branch for figures
+    analysis_group = data_path.require_group('analysis')
+    figures_group = analysis_group.require_group('figures')
 
-    def get_plot():
-        for channel in range(1, n_channel+1):
-            channel_path = os.path.join(self.id_path, "Channel_{}".format(str(channel)))
+    for channel in range(n_channel):
+        exec("{} = ")
+        channel_path = os.path.join(id_path, "Channel_{}".format(str(channel)))
+        os.mkdir(channel_path)
 
-            # Define project dependencies
-            spiketrains = load_spiketrains(self.data_path, channel)
+        # Define project dependencies
+        spiketrains = load_spiketrains(str(data_path), channel)
 
-            # Get orrientation data
-            oe_epoch = self.epochs[0]       # openephys
-            ps_epoch = self.epochs[1]       # psychopy
+        # Get orrientation data
+        oe_epoch = epochs[0]       # openephys
+        ps_epoch = epochs[1]       # psychopy
+        orients = ps_epoch.labels       # the labels are orrientations (135, 90, ...)
 
-            for s_id, spiketrain in enumerate(spiketrains):
-                trials = make_spiketrain_trials(spiketrain, oe_epoch)
-                add_orientation_to_trials(trials, orients)
+        for s_id, spiketrain in enumerate(spiketrains):
+            trials = make_spiketrain_trials(spiketrain, oe_epoch)
+            add_orientation_to_trials(trials, orients)
 
-                orf_path = os.path.join(channel_path, "{}_{}_orrient_raster.png".format(channel, s_id))
-                orient_raster_fig = orient_raster_plots(trials)
-                orient_raster_fig.savefig(orf_path)
+            orf_path = os.path.join(channel_path, "{}_{}_orrient_raster.png".format(channel, s_id))
+            orient_raster_fig = orient_raster_plots(trials)
+            orient_raster_fig.savefig(orf_path)
 
-                tf_path = os.path.join(channel_path, "{}_{}_tuning.png".format(channel, s_id))
-                tuning_fig = plot_tuning_overview(trials)
-                tuning_fig.savefig(tf_path)
+            tf_path = os.path.join(channel_path, "{}_{}_tuning.png".format(channel, s_id))
+            tuning_fig = plot_tuning_overview(trials)
+            tuning_fig.savefig(tf_path)
+
+            plt.close(fig='all')
