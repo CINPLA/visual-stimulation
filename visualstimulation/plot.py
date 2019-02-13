@@ -73,6 +73,7 @@ def orient_raster_plots(trials):
         list of neo.SpikeTrain
     """
     import seaborn
+    
     orient_trials = make_orientation_trials(trials)
     col_count = 4
     row_count = int(np.ceil(len(orient_trials))/col_count)
