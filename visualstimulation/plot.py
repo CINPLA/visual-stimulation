@@ -41,15 +41,15 @@ def plot_tuning_overview(trials, spontan_rate=None):
     ax1 = fig.add_subplot(1, 2, 1)
     trials = make_orientation_trials(trials)
     rates, orients = compute_orientation_tuning(trials)
-    index = orients[np.argmax(rates)]
+    pref_or = orients[np.argmax(rates)]
     osi = compute_osi(rates, orients)
     dsi = compute_dsi(rates, orients)
     cv = compute_circular_variance(rates, orients)
 
-    title = "Preferred orientation={}\nCircular variance={}\nOSI={}\nDSI={}".format(index, osi, dsi, cv)
+    title = "Preferred orientation={:.2f}  OSI={:.2f}\nCircular variance={:.2f}  DSI={:.2f}".format(pref_or, osi, cv, dsi)
     fig.suptitle(title, fontsize=12)
     ax1.plot(orients, rates, "-o", label="with bkg")
-    ax1.set_xsticks(orients.magnitude)
+    ax1.set_xticks(orients.magnitude)
     ax1.set_xlabel("Orientation")
     ax1.set_ylabel("Rate (1/s)")
 
@@ -60,7 +60,7 @@ def plot_tuning_overview(trials, spontan_rate=None):
         ax1.plot(orients, rates - spontan_rate, "-o", label="without bkg")
         ax1.legend()
 
-    fig.tight_layout()
+    fig.tight_layout(rect=[0, 0.03, 1, 0.87])
 
     return fig
 
