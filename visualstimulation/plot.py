@@ -40,6 +40,7 @@ def plot_tuning_overview(trials, spontan_rate=None):
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 2, 1)
+    axes1 = fig.add_axes()
     trials = make_orientation_trials(trials)
     rates, orients = compute_orientation_tuning(trials)
     index = orients[np.argmax(rates)]
@@ -48,6 +49,7 @@ def plot_tuning_overview(trials, spontan_rate=None):
     ax1.set_title("Preferred orientation={},\n OSI={}".format(round(index, 2),
                                                               preferred_orient))
     ax1.plot(orients, rates, "-o", label="with bkg")
+    axes1.xsticks(orients)
     ax1.set_xlabel("Orientation")
     ax1.set_ylabel("Rate (1/s)")
 
