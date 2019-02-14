@@ -35,21 +35,21 @@ def plot_tuning_overview(trials, spontan_rate=None):
     spontan_rates : defaultdict(dict), optional
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
-    import seaborn
-    from .analysis import (compute_orientation_tuning, compute_osi)
+    from .analysis import (compute_orientation_tuning, compute_osi, compute_dsi, compute_circular_variance)
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 2, 1)
-    axes1 = fig.add_axes()
     trials = make_orientation_trials(trials)
     rates, orients = compute_orientation_tuning(trials)
     index = orients[np.argmax(rates)]
-    preferred_orient = compute_osi(rates, orients)
+    osi = compute_osi(rates, orients)
+    dsi = compute_dsi(rates, orients)
+    cv = compute_circular_variance(rates, orients)
 
-    ax1.set_title("Preferred orientation={},\n OSI={}".format(round(index, 2),
-                                                              preferred_orient))
+    title = "Preferred orientation={}\nCircular variance={}\nOSI={}\nDSI={}".format(index, osi, dsi, cv)
+    fig.suptitle(title, fontsize=12)
     ax1.plot(orients, rates, "-o", label="with bkg")
-    axes1.xsticks(orients)
+    ax1.set_xsticks(orients.magnitude)
     ax1.set_xlabel("Orientation")
     ax1.set_ylabel("Rate (1/s)")
 
