@@ -5,6 +5,41 @@ import numpy as np
 import neo
 
 
+def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
+    '''
+    Creates weighed data using gradients from weight_start to weight_end.
+    Example:
+    In:
+    Weight
+    ([1.        , 0.94444444, 0.88888889, 0.83333333, 0.77777778,
+       0.72222222, 0.66666667, 0.61111111, 0.55555556, 0.5       ])
+    Data
+    [2, 5, 7, 4, 8, 10, 3, 7, 3, 5]
+
+    Out: Data * weight
+    Parameters
+    ----------
+    data : numpy.array; list
+        0D data
+    weight_start : int, float
+        Initial weight
+    weight_end : int, float
+        Last weight
+    Returns
+    ------
+    out : numpy.array; list
+    Weighed data
+    '''
+    weights = np.linspace(weight_start, weight_end, len(data))
+    if isinstance(data, np.array):
+        weighed_data = data * weights
+    elif isinstance(data, list):
+        weighed_data = []
+        for rate, weight in zip(data, weights):
+            weighed_data.append(rate * weight)
+    return weighed_data
+
+
 def make_stimulus_off_epoch(epo, include_boundary=False):
     '''
     Creates a neo.Epoch of off periods.

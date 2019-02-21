@@ -3,7 +3,7 @@ import quantities as pq
 import warnings
 
 
-def compute_circular_variance(rates, orients):
+def compute_circular_variance(rates, orients, weight, weights=(1, 0.6)):
     """
     calculates circular variance (see Ringach 2002)
     Parameters
@@ -12,17 +12,26 @@ def compute_circular_variance(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    weight : bool
+        weight the rates vs time using utils.generate_gradiently_weighed_data
+    weights: default: (1, 0.6); list, tupule
+        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
         circular variance
     """
+    
+    if weight is True:
+        from .utils import generate_gradiently_weighed_data as ggwd
+        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
+
     orients = orients.rescale(pq.rad)
     R = np.sum(rates * np.exp(1j*2*orients.magnitude)) / np.sum(rates)
     return 1 - np.absolute(R)
 
 
-def compute_dsi(rates, orients):
+def compute_dsi(rates, orients, weight, weights=(1, 0.6)):
     """
     calculates direction selectivity index
     Parameters
@@ -31,12 +40,20 @@ def compute_dsi(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    weight : bool
+        weight the rates vs time using utils.generate_gradiently_weighed_data
+    weights: default: (1, 0.6); list, tupule
+        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
         direction selectivity index
     """
     from .helper import wrap_angle, find_nearest
+
+    if weight is True:
+        from .utils import generate_gradiently_weighed_data as ggwd
+        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -53,7 +70,7 @@ def compute_dsi(rates, orients):
     return (R_pref - R_opposite) / (R_pref + R_opposite)
 
 
-def compute_osi(rates, orients):
+def compute_osi(rates, orients, weight, weights=(1, 0.6)):
     """
     calculates orientation selectivity index
     Parameters
@@ -62,6 +79,10 @@ def compute_osi(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    weight : bool
+        weight the rates vs time using utils.generate_gradiently_weighed_data
+    weights: default: (1, 0.6); list, tupule
+        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
@@ -69,18 +90,47 @@ def compute_osi(rates, orients):
     """
     from .helper import wrap_angle, find_nearest
 
+    if weight is True:
+        from .utils import generate_gradiently_weighed_data as ggwd
+        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
+
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
     ortho = wrap_angle(pref_orient.rescale(pq.deg).magnitude + 90, wrap_range=360.)*pq.deg
 
     ortho_id, nearest_ortho = find_nearest(array=orients, value=ortho)
     if ortho != nearest_ortho:
-        warnings.warn("ortho angle ({}) wrt pref orient ({}) not find in orients, using nearest angle ({}) in orient".format(ortho, pref_orient, nearest_ortho))
+        warnings.warn("ortho angle ({}) wrt pref orient ({}) not found in orients, using nearest angle ({}) in orient".format(ortho, pref_orient, nearest_ortho))
 
     R_pref = rates.max()
     R_ortho = rates[ortho_id]
 
     return (R_pref - R_ortho) / (R_pref + R_ortho)
+
+def compute_rosi(rates, orients, weight, weights=(1, 0.6)):
+    """
+    calculates relative orientation selectivity index
+    Parameters
+    ----------
+    rates : quantity array
+        array of firing rates
+    orients : quantity array
+        array of orientations
+    weight : bool
+        weight the rates vs time using utils.generate_gradiently_weighed_data
+    weights: default: (1, 0.6); list, tupule
+        gradient start (0); gradient end (1)
+    Returns
+    -------
+    out : float
+        relative orientation selectivity index
+    """
+
+    relativeToMinRates = rates - rates.min()     # remove the rates of the orrientation with least rates from the rest
+    if weight is True:
+        from .utils import generate_gradiently_weighed_data as ggwd
+        rates = ggwd(relativeToMinRates, weight_start=weights[0], weight_end=[1])
+    return compute_osi(rates, orients)
 
 
 def compute_orientation_tuning(orient_trials):
