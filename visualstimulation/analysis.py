@@ -3,7 +3,7 @@ import quantities as pq
 import warnings
 
 
-def compute_circular_variance(rates, orients, weight, weights=(1, 0.6)):
+def compute_circular_variance(rates, orients):
     """
     calculates circular variance (see Ringach 2002)
     Parameters
@@ -12,26 +12,18 @@ def compute_circular_variance(rates, orients, weight, weights=(1, 0.6)):
         array of firing rates
     orients : quantity array
         array of orientations
-    weight : bool
-        weight the rates vs time using utils.generate_gradiently_weighed_data
-    weights: default: (1, 0.6); list, tupule
-        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
         circular variance
     """
-    
-    if weight is True:
-        from .utils import generate_gradiently_weighed_data as ggwd
-        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
 
     orients = orients.rescale(pq.rad)
     R = np.sum(rates * np.exp(1j*2*orients.magnitude)) / np.sum(rates)
     return 1 - np.absolute(R)
 
 
-def compute_dsi(rates, orients, weight, weights=(1, 0.6)):
+def compute_dsi(rates, orients):
     """
     calculates direction selectivity index
     Parameters
@@ -40,20 +32,12 @@ def compute_dsi(rates, orients, weight, weights=(1, 0.6)):
         array of firing rates
     orients : quantity array
         array of orientations
-    weight : bool
-        weight the rates vs time using utils.generate_gradiently_weighed_data
-    weights: default: (1, 0.6); list, tupule
-        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
         direction selectivity index
     """
     from .helper import wrap_angle, find_nearest
-
-    if weight is True:
-        from .utils import generate_gradiently_weighed_data as ggwd
-        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -70,7 +54,7 @@ def compute_dsi(rates, orients, weight, weights=(1, 0.6)):
     return (R_pref - R_opposite) / (R_pref + R_opposite)
 
 
-def compute_osi(rates, orients, weight, weights=(1, 0.6)):
+def compute_osi(rates, orients, relative=False):
     """
     calculates orientation selectivity index
     Parameters
@@ -79,10 +63,6 @@ def compute_osi(rates, orients, weight, weights=(1, 0.6)):
         array of firing rates
     orients : quantity array
         array of orientations
-    weight : bool
-        weight the rates vs time using utils.generate_gradiently_weighed_data
-    weights: default: (1, 0.6); list, tupule
-        gradient start (0); gradient end (1)
     Returns
     -------
     out : float
@@ -90,9 +70,8 @@ def compute_osi(rates, orients, weight, weights=(1, 0.6)):
     """
     from .helper import wrap_angle, find_nearest
 
-    if weight is True:
-        from .utils import generate_gradiently_weighed_data as ggwd
-        rates = ggwd(rates, weight_start=weights[0], weight_end=[1])
+    if relative is True:
+        rates = rates - rates.min()
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -107,33 +86,8 @@ def compute_osi(rates, orients, weight, weights=(1, 0.6)):
 
     return (R_pref - R_ortho) / (R_pref + R_ortho)
 
-def compute_rosi(rates, orients, weight, weights=(1, 0.6)):
-    """
-    calculates relative orientation selectivity index
-    Parameters
-    ----------
-    rates : quantity array
-        array of firing rates
-    orients : quantity array
-        array of orientations
-    weight : bool
-        weight the rates vs time using utils.generate_gradiently_weighed_data
-    weights: default: (1, 0.6); list, tupule
-        gradient start (0); gradient end (1)
-    Returns
-    -------
-    out : float
-        relative orientation selectivity index
-    """
 
-    relativeToMinRates = rates - rates.min()     # remove the rates of the orrientation with least rates from the rest
-    if weight is True:
-        from .utils import generate_gradiently_weighed_data as ggwd
-        rates = ggwd(relativeToMinRates, weight_start=weights[0], weight_end=[1])
-    return compute_osi(rates, orients)
-
-
-def compute_orientation_tuning(orient_trials):
+def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
     '''
     Calculates the mean firing rate for each orientation
 
@@ -148,9 +102,14 @@ def compute_orientation_tuning(orient_trials):
         average rates
     orients : quantity array
         sorted stimulus orientations
+    weigh: bool; default: False
+        Use gradiently weighed data
+    weights: tuple, list; default: (1, 0.6)
+        (initial weight, last weight) ===(generate graident)==> (initial weight, ..., last weight)
     '''
     from elephant.statistics import mean_firing_rate
     from .helper import convert_string_to_quantity_scalar
+    from .utils import generate_gradiently_weighed_data as ggwd
 
     unit_orients = pq.deg
     unit_rates = pq.Hz
@@ -163,8 +122,16 @@ def compute_orientation_tuning(orient_trials):
         orient = convert_string_to_quantity_scalar(orient)
         rate = 0 * unit_rates
 
-        for trial in trials:
-            rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
+        if weigh is True:
+            for trial in trials:
+                weighed_trial = ggwd(
+                    trial[trial.t_start.magnitude : trial.t_stop.magnitude],
+                    weight_start=weights[0],
+                    weight_end=weights[1])
+                rate += mean_firing_rate(trial)
+        else:
+            for trial in trials:
+                rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
 
         rates[i] = rate / len(trials)
         orients[i] = orient.rescale(unit_orients)

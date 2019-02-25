@@ -35,28 +35,32 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
     spontan_rates : defaultdict(dict), optional
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
-    from .analysis import (compute_orientation_tuning, compute_osi, compute_rosi, compute_dsi, compute_circular_variance)
+    from .analysis import (compute_orientation_tuning, compute_osi, compute_dsi, compute_circular_variance)
     fig = plt.figure(figsize=(21, 9))
 
     ax1 = fig.add_subplot(1, 2, 1)
     trials = make_orientation_trials(trials)
-    rates, orients = compute_orientation_tuning(trials)
-    pref_or = orients[np.argmax(rates)]
     
     """ Analytical parameters """
     # Non-Weighed
-    osi = compute_osi(rates, orients, weight=False)
+    rates, orients = compute_orientation_tuning(trials)
 
-    rosi = compute_rosi(rates, orients, weight=False)
-    dsi = compute_dsi(rates, orients, weight=False)
-    cv = compute_circular_variance(rates, orients, weight=False)
+    pref_or = orients[np.argmax(rates)]
+    osi = compute_osi(rates, orients)
+    rosi = compute_osi(rates, orients, relative=True)
+    dsi = compute_dsi(rates, orients)
+    cv = compute_circular_variance(rates, orients)
+
     # Weighed
-    w_osi = compute_osi(rates, orients, weight=True, weights=weights)
-    w_rosi = compute_rosi(rates, orients, weight=True, weights=weights)
-    w_dsi = compute_dsi(rates, orients, weight=True, weights=weights)
-    w_cv = compute_circular_variance(rates, orients, weight=True, weights=weights)
+    w_rates, orients = compute_orientation_tuning(trials, weigh=True, weights=weights)
 
-    title_1 = "PO={}\n".format(pref_or)
+    w_pref_or = orients[np.argmax(w_rates)]
+    w_osi = compute_osi(w_rates, orients)
+    w_rosi = compute_osi(w_rates, orients, relative=True)
+    w_dsi = compute_dsi(w_rates, orients)
+    w_cv = compute_circular_variance(w_rates, orients)
+
+    title_1 = "Preferred orientation={}  Weighed PO={}".format(pref_or, w_pref_or)
     title_2 = "Non-weighed: OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}\n".format(osi, cv, dsi, rosi)
     title_3 = "Weighed:     OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}".format(w_osi, w_cv, w_dsi, w_rosi)
     fig.suptitle(title_1 + title_2 + title_3, fontsize=17)
