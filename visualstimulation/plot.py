@@ -36,7 +36,6 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
     from .analysis import (compute_orientation_tuning, compute_osi, compute_dsi, compute_circular_variance)
-    from elephant.statistics import isi
     import seaborn
 
     fig = plt.figure(figsize=(21, 9))
@@ -61,7 +60,7 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
     w_dsi = compute_dsi(w_rates, orients)
     w_cv = compute_circular_variance(w_rates, orients)
 
-    title_1 = "Preferred orientation={}  Weighed PO={}\n".format(pref_or, w_pref_or)
+    title_1 = "Preferred orientation={}  Weighed PO={}".format(pref_or, w_pref_or)
     title_2 = "Non-weighed: OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}\n".format(osi, cv, dsi, rosi)
     title_3 = "Weighed:     OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}".format(w_osi, w_cv, w_dsi, w_rosi)
     fig.suptitle(title_1 + title_2 + title_3, fontsize=17)

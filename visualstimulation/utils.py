@@ -30,6 +30,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
     out : numpy.array
     Weighed data
     '''
+
     weights = np.linspace(weight_start, weight_end, len(data))
     if isinstance(data, type(np.empty(0))):
         weighed_data = data * weights

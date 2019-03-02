@@ -8,7 +8,7 @@ from .plot import orient_raster_plots, plot_tuning_overview
 
 
 def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_start=-0.5, raster_stop=1):
-    if not rem_channel == "all" or (isinstance(rem_channel, int) and rem_channel < n_channel):
+    if not (rem_channel == "all" or (isinstance(rem_channel, int) and rem_channel < n_channel)):
         msg = "rem_channel must be either 'all' or integer between 0 and n_channel ({}); not {}".format(
             n_channel, rem_channel
         )
@@ -33,13 +33,13 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_
     raster_stop = raster_stop * pq.s
     orients = ps_epoch.labels       # the labels are orrientations (135, 90, ...)
 
-    def plot(channel_path, spiketrains):
+    def plot(channel_num, channel_path, spiketrains):
         # Create figures from spiketrains
         for spiketrain in spiketrains:
             if spiketrain.annotations["cluster_group"] == "noise":
                 continue
             
-            figure_id = "{}_{}_".format(channel, spiketrain.annotations['cluster_id'])
+            figure_id = "{}_{}_".format(channel_num, spiketrain.annotations['cluster_id'])
 
             # Raster plot processing
             trials = make_spiketrain_trials(spiketrain, oe_epoch, t_start=raster_start, t_stop=raster_stop)
@@ -66,13 +66,13 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_
 
             spiketrains = load_spiketrains(str(data_path), channel)
 
-            plot(channel_path, spiketrains)
+            plot(channel, channel_path, spiketrains)
 
-    elif isinstance(rem_channel, int) and rem_channel < n_channel:
+    elif isinstance(rem_channel, int):
         channel_name = "channel_{}".format(rem_channel)
         channel_group = figures_group.require_group(channel_name)
         channel_path = os.path.join(str(data_path), "figures\\"  + channel_name)
 
         spiketrains = load_spiketrains(str(data_path), rem_channel)
 
-        plot(channel_path, spiketrains)
+        plot(rem_channel, channel_path, spiketrains)
