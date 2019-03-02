@@ -19,7 +19,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
     Out: Data * weight
     Parameters
     ----------
-    data : numpy.array; list
+    data : numpy.array
         0D data
     weight_start : int, float
         Initial weight
@@ -27,16 +27,15 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
         Last weight
     Returns
     ------
-    out : numpy.array; list
+    out : numpy.array
     Weighed data
     '''
     weights = np.linspace(weight_start, weight_end, len(data))
-    if isinstance(data, np.array):
+    if isinstance(data, type(np.empty(0))):
         weighed_data = data * weights
-    elif isinstance(data, list):
-        weighed_data = []
-        for rate, weight in zip(data, weights):
-            weighed_data.append(rate * weight)
+    else:
+        msg = "Data is invalid type, it is {}, and not numpy.array".format(type(data))
+        raise(AttributeError(msg))
     return weighed_data
 
 
