@@ -36,7 +36,6 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
         rates[channel_index_name][unit_id] = spontaneous firing rate trials.
     """
     from .analysis import (compute_orientation_tuning, compute_osi, compute_dsi, compute_circular_variance)
-    import seaborn
 
     fig = plt.figure(figsize=(21, 9))
     trials = make_orientation_trials(trials)
@@ -63,6 +62,7 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
     title_1 = "Preferred orientation={}  Weighed PO={}".format(pref_or, w_pref_or)
     title_2 = "Non-weighed: OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}\n".format(osi, cv, dsi, rosi)
     title_3 = "Weighed:     OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}".format(w_osi, w_cv, w_dsi, w_rosi)
+
     fig.suptitle(title_1 + title_2 + title_3, fontsize=17)
 
     ax1 = fig.add_subplot(1, 2, 1)
@@ -111,16 +111,24 @@ def orient_raster_plots(trials):
             ax[r+1, c] = plot_isi(orient_trials, ax=ax[r+1, c])
 
             i += 1
-            
+    
     plt.tight_layout()
-
     return fig
 
-def plot_isi(trials, ax=None, height=0.18):
+def plot_isi(trials, ax=None, height=0.5):
     """
+    Plot median and mean of interspike intervals
+    Parameters
+    ----------
+    trials : list of neo.SpikeTrains
+    ax : matplotlib axes
+    heigth: float. Thickness of bars
+    Returns
+    -------
+    out : axes
     """
-
     from elephant.statistics import isi
+    import seaborn as sns
 
     if ax is None:
         fig, ax = plt.subplots()
@@ -130,24 +138,24 @@ def plot_isi(trials, ax=None, height=0.18):
     trial_std = []
     x_axis = []
     for i, sptr in enumerate(trials):
-        if len(sptr) > 1:
+        if len(sptr) >= 4:
             sptr_isi = isi(sptr)
             trial_median_isis.append(np.median(sptr_isi).magnitude)
             trial_mean_isis.append(np.mean(sptr_isi).magnitude)
             trial_std.append(np.std(sptr_isi).magnitude)
             x_axis.append(i+1)
-        elif 0 <= len(sptr) < 2:
+        elif 0 <= len(sptr) < 4:
             pass
         else:
             msg = "Something went wrong len(<sptr>) is negative"
             raise(RuntimeError, msg)
-
-    x_axis = np.array(x_axis)
-    median = ax.barh(x_axis-height, trial_median_isis, height=height, color='b', align='center')
-    mean = ax.barh(x_axis, trial_mean_isis, height=height, xerr=trial_std, color='r', align='center')
-    ax.legend(('Median', 'Mean'))
-    return ax
     
+    x_axis = np.array(x_axis)
+    with sns.axes_style("whitegrid"):
+        median = ax.barh(x_axis-height/2, trial_median_isis, height=height*1.03, color='b', align='center')
+        mean = ax.barh(x_axis+height/2, trial_mean_isis, height=height*1.03, xerr=trial_std, color='r', align='center')
+        ax.legend(('Median', 'Mean'))
+    return ax
 
 def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='|', marker_size=45,
                 ylabel='Trials', id_start=0, ylim=None):
@@ -187,6 +195,7 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker='|', marker_size=
         ax.set_ylim(ylim)
     else:
         pass
+
     y_ax = ax.axes.get_yaxis()  # Get X axis
     y_ax.set_major_locator(MaxNLocator(integer=True))
     t_start = trials[0].t_start.rescale(dim)

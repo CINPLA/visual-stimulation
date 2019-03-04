@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import quantities as pq
+import seaborn as sns
 import expipe
 
 from .openephys import *
@@ -41,6 +42,8 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_
             
             figure_id = "{}_{}_".format(channel_num, spiketrain.annotations['cluster_id'])
 
+            sns.set()
+            sns.set_style("white")
             # Raster plot processing
             trials = make_spiketrain_trials(spiketrain, oe_epoch, t_start=raster_start, t_stop=raster_stop)
             add_orientation_to_trials(trials, orients)
