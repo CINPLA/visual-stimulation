@@ -3,12 +3,36 @@ import quantities as pq
 import seaborn as sns
 import expipe
 
+from numpy import empty
+
 from .openephys import *
 from .utils import make_spiketrain_trials, add_orientation_to_trials
 from .plot import orient_raster_plots, plot_tuning_overview
 
 
-def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_start=-0.5, raster_stop=1):
+def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", skip_channels=None, raster_start=-0.5, raster_stop=1):
+    """
+    Plot raster, isi-mean-median, tuning (polar and linear) from visual data acquired through open-ephys and psychopy
+    Parameters
+    ----------
+    project_path: os.path, or equivallent
+        Path to project directory
+    action_id: string
+        The experiment/action id
+    n_channel: default 8; int
+        Number of channel groups in recordings
+    rem_channel: default "all"; "all" or int
+        Signify what channels are of interest(=rem)
+    skip_channels: default None; int or (list, array, tupule)
+        ID of channel groups to skip
+    raster_start: default -0.5; int or float
+        When the rasters start on the x-axis relative to trial start, which is 0
+    raster_stop: default 1; int or float
+        When the rasters stop on the x-axis relative to trial start, which is 0
+    Returns
+    -------
+    savesfigures into exdir directory: main.exdir/figures
+    """
     if not (rem_channel == "all" or (isinstance(rem_channel, int) and rem_channel < n_channel)):
         msg = "rem_channel must be either 'all' or integer between 0 and n_channel ({}); not {}".format(
             n_channel, rem_channel
@@ -37,8 +61,12 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_
     def plot(channel_num, channel_path, spiketrains):
         # Create figures from spiketrains
         for spiketrain in spiketrains:
-            if spiketrain.annotations["cluster_group"] == "noise":
-                continue
+            try:
+                if spiketrain.annotations["cluster_group"] == "noise":
+                    continue
+            except KeyError:
+                msg = "Cluster/channel group {} seems to not have been sorted in phys".format(channel_num)
+                raise KeyError(msg)
             
             figure_id = "{}_{}_".format(channel_num, spiketrain.annotations['cluster_id'])
 
@@ -62,7 +90,15 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", raster_
             plt.close(fig="all")
 
     if rem_channel == "all":
-        for channel in range(n_channel):
+        channels = range(n_channel)
+        if isinstance(skip_channels, int):
+            channels = [x for x in channels]
+            del channels[skip_channels]
+        elif isinstance(skip_channels, (list, tuple, type(empty(0)))):
+            channels = [x for x in channels]
+            for channel in skip_channels:
+                del channels[channel]
+        for channel in channels:
             channel_name = "channel_{}".format(channel)
             channel_group = figures_group.require_group(channel_name)
             channel_path = os.path.join(str(data_path), "figures\\"  + channel_name)

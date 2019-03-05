@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .utils import make_orientation_trials
 
-def polar_tuning_curve(orients, rates, ax=None, params={}):
+def polar_tuning_curve(orients, rates, transperancy=0.5, ax=None, params={}):
     """
     Direction polar tuning curve
     """
@@ -15,7 +15,7 @@ def polar_tuning_curve(orients, rates, ax=None, params={}):
         ax = plt.subplot(111, projection='polar')
 
     ax.plot(orients, rates, '-', **params)
-    ax.fill(orients, rates, alpha=1)
+    ax.fill(orients, rates, alpha=transperancy)
     ax.set_yticklabels([])
     ax.set_theta_zero_location('N')
     ax.set_theta_direction(-1)
@@ -59,7 +59,7 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
     w_dsi = compute_dsi(w_rates, orients)
     w_cv = compute_circular_variance(w_rates, orients)
 
-    title_1 = "Preferred orientation={}  Weighed PO={}".format(pref_or, w_pref_or)
+    title_1 = "Preferred orientation={}  Weighed PO={}\n".format(pref_or, w_pref_or)
     title_2 = "Non-weighed: OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}\n".format(osi, cv, dsi, rosi)
     title_3 = "Weighed:     OSI={:.2f}  CV={:.2f}  DSI={:.2f}  rOSI={:.2f}".format(w_osi, w_cv, w_dsi, w_rosi)
 
