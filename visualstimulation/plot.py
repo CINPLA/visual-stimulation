@@ -1,6 +1,10 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
+import seaborn as sns
+
 from .utils import make_orientation_trials
+from elephant.statistics import isi
 
 def polar_tuning_curve(orients, rates, transperancy=0.5, ax=None, params={}):
     """
@@ -23,7 +27,7 @@ def polar_tuning_curve(orients, rates, transperancy=0.5, ax=None, params={}):
     return ax
 
 
-def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
+def plot_tuning_overview(trials, unit_spiketrain, spontan_rate=None, weights=(1, 0.6)):
     """
     Makes orientation tuning plots (line and polar plot)
     for each stimulus orientation.
@@ -37,7 +41,8 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
     """
     from .analysis import (compute_orientation_tuning, compute_osi, compute_dsi, compute_circular_variance)
 
-    fig = plt.figure(figsize=(21, 9))
+    fig = plt.figure(figsize=(20, 10))
+    gs = matplotlib.gridspec.GridSpec(2, 2)
     trials = make_orientation_trials(trials)
     
     """ Analytical parameters """
@@ -65,20 +70,22 @@ def plot_tuning_overview(trials, spontan_rate=None, weights=(1, 0.6)):
 
     fig.suptitle(title_1 + title_2 + title_3, fontsize=17)
 
-    ax1 = fig.add_subplot(1, 2, 1)
+    ax1 = fig.add_subplot(gs[0, 0])
     ax1.plot(orients, rates, "-o", label="with bkg")
     ax1.set_xticks(orients.magnitude)
     ax1.set_xlabel("Orientation angle (deg)")
     ax1.set_ylabel("Rate (Hz)")
-
-    ax2 = fig.add_subplot(1, 2, 2, projection="polar")
-    polar_tuning_curve(orients.rescale("rad"), rates, ax=ax2)
-
     if spontan_rate is not None:
         ax1.plot(orients, rates - spontan_rate, "-o", label="without bkg")
         ax1.legend()
 
-    fig.tight_layout(rect=[0, 0.03, 1, 0.87])
+    ax2 = fig.add_subplot(gs[0, 1], projection="polar")
+    polar_tuning_curve(orients.rescale("rad"), rates, ax=ax2)
+
+    ax3 = fig.add_subplot(gs[1, :])
+    sns.distplot(isi(unit_spiketrain), ax=ax3)
+
+    fig.tight_layout(rect=[0, 0.03, 1, 0.92])
 
     return fig
 
@@ -95,11 +102,11 @@ def orient_raster_plots(trials):
     orients = list(m_orient_trials.keys())
 
     col_count = 4
-    row_count = int(np.ceil(2 * len(m_orient_trials)/col_count))
-    fig, ax = plt.subplots(row_count, col_count, figsize=(22, 25))
+    row_count = int(np.ceil(len(m_orient_trials)/col_count))
+    fig, ax = plt.subplots(row_count, col_count, figsize=(10*col_count, 4*row_count))
 
     i = 0
-    for r in range(0, row_count, 2):
+    for r in range(0, row_count):
         for c in range(col_count):
             orient = orients[i]
             orient_trials = m_orient_trials[orient]
@@ -108,27 +115,25 @@ def orient_raster_plots(trials):
             ax[r, c].set_title(orient)
             ax[r, c].grid(False)
 
-            ax[r+1, c] = plot_isi(orient_trials, ax=ax[r+1, c])
-
             i += 1
     
     plt.tight_layout()
     return fig
 
-def plot_isi(trials, ax=None, height=0.5):
+
+def plot_spiketrain_isi(trials, height=0.5, ax=None):
     """
-    Plot median and mean of interspike intervals
+    Deprected
+    Plot median and mean of interspike intervals in spiketrain
     Parameters
     ----------
     trials : list of neo.SpikeTrains
-    ax : matplotlib axes
     heigth: float. Thickness of bars
+    ax : matplotlib axes
     Returns
     -------
     out : axes
     """
-    from elephant.statistics import isi
-    import seaborn as sns
 
     if ax is None:
         fig, ax = plt.subplots()

@@ -5,7 +5,7 @@ import numpy as np
 import neo
 
 
-def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
+def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
     '''
     Creates weighed data using gradients from weight_start to weight_end.
     Example:
@@ -32,11 +32,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.6):
     '''
 
     weights = np.linspace(weight_start, weight_end, len(data))
-    if isinstance(data, type(np.empty(0))):
-        weighed_data = data * weights
-    else:
-        msg = "Data is invalid type, it is {}, and not numpy.array".format(type(data))
-        raise(AttributeError(msg))
+    weighed_data = data * weights
     return weighed_data
 
 

@@ -3,9 +3,10 @@ import quantities as pq
 import seaborn as sns
 import expipe
 
+from copy import deepcopy
 from numpy import empty
 
-from .openephys import *
+from .exdir import *
 from .utils import make_spiketrain_trials, add_orientation_to_trials
 from .plot import orient_raster_plots, plot_tuning_overview
 
@@ -83,7 +84,7 @@ def psycho_plot(project_path, action_id, n_channel=8, rem_channel="all", skip_ch
             trials = make_spiketrain_trials(spiketrain, oe_epoch)
             add_orientation_to_trials(trials, orients)
             tf_path = os.path.join(channel_path, figure_id + "tuning.svg")
-            tuning_fig = plot_tuning_overview(trials)
+            tuning_fig = plot_tuning_overview(trials, spiketrain)
             tuning_fig.savefig(tf_path)
 
             # Reset before next loop to save memory

@@ -87,7 +87,7 @@ def compute_osi(rates, orients, relative=False):
     return (R_pref - R_ortho) / (R_pref + R_ortho)
 
 
-def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6), trial_length="t_ss"):
+def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
     '''
     Calculates the mean firing rate for each orientation
 
@@ -124,12 +124,8 @@ def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6), tri
 
         if weigh is True:
             for trial in trials:
-                if trial_length == "t_ss":
-                    weighed_trial = ggwd(trial, weight_start=weights[0], weight_end=weights[1])
-                elif trial_length == "t_sc":
-                    indices = np.where((trial.t_start.item() < trial.magnitude) & (trial.magnitude < trial.t_stop.item()))[0]
-                    weighed_trial = ggwd(trial[indeces], weight_start=weights[0], weight_end=weights[1])
-                rate += mean_firing_rate(trial)
+                weighed_trial = ggwd(trial, weight_start=weights[0], weight_end=weights[1])
+                rate += mean_firing_rate(weighed_trial, trial.t_start, trial.t_stop)
         else:
             for trial in trials:
                 rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
