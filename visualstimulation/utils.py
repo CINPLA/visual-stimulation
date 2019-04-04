@@ -1,12 +1,11 @@
-import os
 import quantities as pq
-import exdir
 import numpy as np
 import neo
+import os
 
 
 def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
-    '''
+    """
     Creates weighed data using gradients from weight_start to weight_end.
     Example:
     In:
@@ -29,7 +28,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
     ------
     out : numpy.array
     Weighed data
-    '''
+    """
 
     weights = np.linspace(weight_start, weight_end, len(data))
     weighed_data = data * weights
@@ -37,7 +36,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
 
 
 def make_stimulus_off_epoch(epo, include_boundary=False):
-    '''
+    """
     Creates a neo.Epoch of off periods.
     Parameters
     ----------
@@ -48,7 +47,7 @@ def make_stimulus_off_epoch(epo, include_boundary=False):
     Returns
     ------
     out : neo.Epoch
-    '''
+    """
 
     from neo.core import Epoch
     times = epo.times[:-1] + epo.durations[:-1]
@@ -71,7 +70,7 @@ def make_orientation_trials(trials, unit=pq.deg):
     ----------
     trials : neo.SpikeTrains
         list of spike trains where orientation is given as
-        annotation 'orient' (quantity scalar) on each spike train.
+        annotation "orient" (quantity scalar) on each spike train.
     unit : Quantity, optional
         scaling unit (default is degree) used for orients
         used as keys in dictionary.
@@ -96,7 +95,7 @@ def make_orientation_trials(trials, unit=pq.deg):
 
 def add_orientation_to_trials(trials, orients):
     """
-    Adds annotation 'orient' to trials
+    Adds annotation "orient" to trials
     Parameters
     ----------
     trials : list of neo.SpikeTrains
@@ -109,7 +108,7 @@ def add_orientation_to_trials(trials, orients):
 
 
 def generate_grating_stimulus_group(exdir_path, data, timestamps, mode="None"):
-    '''
+    """
     Generates grating exdir group with timestamp dataset and
     data (eg. orientation) dataset.
     Parameters
@@ -121,7 +120,7 @@ def generate_grating_stimulus_group(exdir_path, data, timestamps, mode="None"):
     timestamps : array_like
     mode: string, optional
         describes grating data
-    '''
+    """
     exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     stimulus = exdir_file.require_group("stimulus")
     presentation = stimulus.require_group("presentation")
@@ -134,14 +133,14 @@ def generate_grating_stimulus_group(exdir_path, data, timestamps, mode="None"):
 
 
 def generate_blank_group(exdir_path, timestamps):
-    '''
+    """
     Generates blank exdir group with timestamp dataset
     Parameters
     ----------
     exdir_path : string
             Path to exdir file
     timestamps : array_like
-    '''
+    """
     exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     stimulus = exdir_file.require_group("stimulus")
     presentation = stimulus.require_group("presentation")
@@ -152,7 +151,7 @@ def generate_blank_group(exdir_path, timestamps):
 
 
 def generate_key_event_group(exdir_path, keys, timestamps):
-    '''
+    """
     Generates key press exdir group with timestamp
     dataset and key dataset.
     Parameters
@@ -162,7 +161,7 @@ def generate_key_event_group(exdir_path, keys, timestamps):
     keys : array_like
         array with pressed keys
     timestamps : array_like
-    '''
+    """
     exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     stimulus = exdir_file.require_group("stimulus")
     presentation = stimulus.require_group("presentation")
@@ -173,7 +172,7 @@ def generate_key_event_group(exdir_path, keys, timestamps):
 
 
 def generate_grating_stimulus_epoch(exdir_path, timestamps, durations, data):
-    '''
+    """
     Generates visual stimulus epoch exdir group with timestamps
     and duration.
     Parameters
@@ -182,22 +181,22 @@ def generate_grating_stimulus_epoch(exdir_path, timestamps, durations, data):
             Path to exdir file
     timestamps : array_like
     durations : array_like
-    '''
+    """
     exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     epochs = exdir_file.require_group("epochs")
     stim_epoch = epochs.require_group("visual_stimulus")
     stim_epoch.attrs["type"] = "visual_stimulus"
-    times = stim_epoch.require_dataset('timestamps', data=timestamps)
-    times.attrs['num_samples'] = len(timestamps)
-    durations = stim_epoch.require_dataset('durations', data=durations)
-    durations.attrs['num_samples'] = len(durations)
-    data = stim_epoch.require_dataset('data', data=data)
-    data.attrs['num_samples'] = len(data)
+    times = stim_epoch.require_dataset("timestamps", data=timestamps)
+    times.attrs["num_samples"] = len(timestamps)
+    durations = stim_epoch.require_dataset("durations", data=durations)
+    durations.attrs["num_samples"] = len(durations)
+    data = stim_epoch.require_dataset("data", data=data)
+    data.attrs["num_samples"] = len(data)
 
 
 def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
                            dim=None):
-    '''
+    """
     Makes trials based on an Epoch and given temporal bound
     Parameters
     ----------
@@ -213,7 +212,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
     Returns
     -------
     out : list of neo.SpikeTrains
-    '''
+    """
 
     if isinstance(spike_train, neo.Unit):
         sptr = []
@@ -227,7 +226,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
         dim = sptr.dimensionality
         unit = sptr.units
     elif isinstance(spike_train, pq.Quantity):
-        assert is_quantities(spike_train, 'vector')
+        assert is_quantities(spike_train, "vector")
         sptr = spike_train
         dim = sptr.dimensionality
         unit = sptr.units
@@ -236,9 +235,9 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
         dim = sptr.dimensionality
         unit = sptr.units
     else:
-        raise TypeError('Expected (neo.Unit, neo.SpikeTrain, ' +
-                        'quantities.Quantity, numpy.array), got "' +
-                        str(type(spike_train)) + '"')
+        raise TypeError("Expected (neo.Unit, neo.SpikeTrain, " +
+                        "quantities.Quantity, numpy.array), got" +
+                        str(type(spike_train)))
 
     from neo.core import SpikeTrain
     if t_start is None:
@@ -247,17 +246,17 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
         t_starts = t_start * np.ones(len(epoch.times))
     else:
         t_starts = t_start
-        assert len(epoch.times) == len(t_starts), 'epoch.times and t_starts have different size'
+        assert len(epoch.times) == len(t_starts), "epoch.times and t_starts have different size"
     if t_stop is None:
         t_stop = epoch.durations
     if t_stop.ndim == 0:
         t_stops = t_stop * np.ones(len(epoch.times))
     else:
         t_stops = t_stop
-        assert len(epoch.times) == len(t_stops), 'epoch.times and t_stops have different size'
+        assert len(epoch.times) == len(t_stops), "epoch.times and t_stops have different size"
 
     if not isinstance(epoch, neo.Epoch):
-        raise TypeError('Expected "neo.Epoch" got "' + str(type(epoch)) + '"')
+        raise TypeError("Expected {} got {}".format(neo.Epoch, str(type(epoch))))
 
     trials = []
     for j, t in enumerate(epoch.times.rescale(dim)):
@@ -273,7 +272,7 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
 
 
 def make_stimulus_trials(chxs, stim_epoch):
-    '''
+    """
     makes stimulus trials for every units (good) in each channel
     Parameters
     ----------
@@ -285,13 +284,13 @@ def make_stimulus_trials(chxs, stim_epoch):
     -------
     out : defaultdict(dict)
         trials[channel_index_name][unit_id] = list of spike_train trials.
-    '''
+    """
     from collections import defaultdict
     stim_trials = defaultdict(dict)
 
     for chx in chxs:
         for un in chx.units:
-            cluster_group = un.annotations.get('cluster_group') or 'noise'
+            cluster_group = un.annotations.get("cluster_group") or "noise"
             if cluster_group.lower() != "noise":
                 sptr = un.spiketrains[0]
                 trials = make_spiketrain_trials(epoch=stim_epoch,
@@ -310,7 +309,7 @@ def make_stimulus_trials(chxs, stim_epoch):
 
 
 def get_epoch(epochs, epoch_type):
-    '''
+    """
     Returns epoch with matching name
     Parameters
     ----------
@@ -321,7 +320,7 @@ def get_epoch(epochs, epoch_type):
     Returns
     -------
     out : neo.core.Epoch
-    '''
+    """
     for epoch in epochs:
         if epoch_type == epoch.annotations.get("type", None):
             return epoch
@@ -428,7 +427,7 @@ def get_unit_sptr(action, unit_id):
         units_trials : neo.core.spiketrain.SpikeTrain
             Neo spike trains
     """
-    channels = [{"ch": key, "units": value} for key, value in cell_module.items() if 'channel_group_' in key]
+    channels = [{"ch": key, "units": value} for key, value in cell_module.items() if "channel_group_" in key]
 
     seg_sptrs = get_segment_sptrs(action)
     sptr = []
@@ -469,7 +468,7 @@ def get_unit_trials(action, unit_id, time_offset=0*pq.ms):
     """
     stim_trials = get_stim_trials(action, time_offset)
 
-    channels = [{"ch": key, "units": value} for key, value in cell_module.items() if 'channel_group_' in key]
+    channels = [{"ch": key, "units": value} for key, value in cell_module.items() if "channel_group_" in key]
 
     trials = []
     for ch in channels:
@@ -515,7 +514,7 @@ def get_all_units_trials(actions, time_offset=0*pq.ms):
         except Exception:
             print("skipped action {}".format(action.id))
             continue
-        channels = [{"ch": key, "units": value} for key, value in cell_module.items() if 'channel_group_' in key]
+        channels = [{"ch": key, "units": value} for key, value in cell_module.items() if "channel_group_" in key]
 
         for ch in channels:
             ch_name = ("Channel group {}".format(ch["ch"].split("channel_group_")[-1]))

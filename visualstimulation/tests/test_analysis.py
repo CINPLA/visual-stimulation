@@ -26,6 +26,7 @@ def test_circular_variance():
 
 
 def test_compute_osi():
+    # normalise false
     orients = np.arange(0, 315, 45)*pq.deg
     rates = np.array([1, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
     assert abs(compute_osi(rates, orients) - 1/3) < 1e-12
@@ -42,6 +43,24 @@ def test_compute_osi():
     rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
     with pytest.warns(UserWarning):
         assert abs(compute_osi(rates, orients) - 1/5) < 1e-12
+    
+    # normalise true
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([1, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients, normalise=True) - 1) < 1e-12
+
+    orients = np.arange(0, 315, 45)*pq.deg
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients, normalise=True) - 1/3) < 1e-12
+
+    orients = np.arange(0, 2*np.pi, np.pi/4)*pq.rad
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    assert abs(compute_osi(rates, orients, normalise=True) - 1/3) < 1e-12
+
+    orients = np.arange(0, 315, 40)*pq.deg
+    rates = np.array([3, 1, 2, 1, 1, 2, 1, 1])*pq.Hz
+    with pytest.warns(UserWarning):
+        assert abs(compute_osi(rates, orients, normalise=True) - 1/3) < 1e-12
 
 
 def test_compute_dsi():

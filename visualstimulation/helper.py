@@ -20,7 +20,7 @@ def find_nearest(array, value):
 
 
 def wrap_angle(angle, wrap_range=360.):
-    '''
+    """
     wraps angle in to the interval [0, wrap_range]
 
     Parameters
@@ -34,7 +34,7 @@ def wrap_angle(angle, wrap_range=360.):
     -------
     out : numpy.array/float
         angle in interval [0, wrap_range]
-    '''
+    """
     return angle - wrap_range * np.floor(angle/float(wrap_range))
 
 
@@ -46,7 +46,7 @@ def rescale_orients(trials, unit=pq.deg):
     ----------
     trials : neo.SpikeTrains
         list of spike trains where orientation is given as
-        annotation 'orient' (quantity scalar) on each spike train.
+        annotation "orient" (quantity scalar) on each spike train.
     unit : Quantity, optional
         scaling unit. Default is degree.
     """

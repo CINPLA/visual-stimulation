@@ -54,7 +54,7 @@ def compute_dsi(rates, orients):
     return (R_pref - R_opposite) / (R_pref + R_opposite)
 
 
-def compute_osi(rates, orients, relative=False):
+def compute_osi(rates, orients, normalise=False):
     """
     calculates orientation selectivity index
     Parameters
@@ -63,6 +63,8 @@ def compute_osi(rates, orients, relative=False):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
@@ -70,8 +72,8 @@ def compute_osi(rates, orients, relative=False):
     """
     from .helper import wrap_angle, find_nearest
 
-    if relative is True:
-        rates = rates - rates.min()
+    if normalise is True:
+        n_rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -88,7 +90,7 @@ def compute_osi(rates, orients, relative=False):
 
 
 def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
-    '''
+    """
     Calculates the mean firing rate for each orientation
 
     Parameters
@@ -106,7 +108,7 @@ def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
         Use gradiently weighed data
     weights: tuple, list; default: (1, 0.6)
         (initial weight, last weight) ===(generate graident)==> (initial weight, ..., last weight)
-    '''
+    """
     from elephant.statistics import mean_firing_rate
     from .helper import convert_string_to_quantity_scalar
     from .utils import generate_gradiently_weighed_data as ggwd
@@ -181,7 +183,7 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
 
 def compute_spontan_rate(chxs, stim_off_epoch):
     # TODO: write tests
-    '''
+    """
     Calculates spontaneous firing rate
 
     Parameters
@@ -195,7 +197,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     -------
     out : defaultdict(dict)
         rates[channel_index_name][unit_id] = spontaneous rate
-    '''
+    """
     from collections import defaultdict
     from elephant.statistics import mean_firing_rate
     from visualstimulation.utils import make_spiketrain_trials
@@ -205,7 +207,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
 
     for chx in chxs:
         for un in chx.units:
-            cluster_group = un.annotations.get('cluster_group') or 'noise'
+            cluster_group = un.annotations.get("cluster_group") or "noise"
             if cluster_group.lower() != "noise":
                 sptr = un.spiketrains[0]
                 unit_id = un.annotations["cluster_id"]
@@ -239,11 +241,11 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
         if search_stop is None:
             search_stop = t_stop
     trial = neo.SpikeTrain(times=np.array([st for trial in trials
-                                           for st in trial.times.rescale('s')])*pq.s,
+                                           for st in trial.times.rescale("s")])*pq.s,
                            t_start=t_start, t_stop=t_stop)
     rate = elephant.statistics.instantaneous_rate(trial, sampling_period,
                                                   kernel=kernel, trim=True)/len(trials)
-    rate_mag = rate.rescale('Hz').magnitude.reshape(len(rate))
+    rate_mag = rate.rescale("Hz").magnitude.reshape(len(rate))
     if not any(rate_mag):
         return np.nan, rate
     else:
@@ -252,7 +254,7 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
         # spk, ind = find_max_peak(rate_mag[mask])
         krit1 = rate_mag[mask].mean() + rate_mag[mask].std() > rate_mag[spont_mask].mean() + rate_mag[spont_mask].std()
         spike_mask = (trial.times > 0*pq.ms) & (trial.times < search_stop)
-        krit2 = len(trial.times[spike_mask])/search_stop.rescale('s') > 1.*pq.Hz
+        krit2 = len(trial.times[spike_mask])/search_stop.rescale("s") > 1.*pq.Hz
         if not krit1 and krit2:
             return np.nan, rate
         t0 = 0*pq.ms

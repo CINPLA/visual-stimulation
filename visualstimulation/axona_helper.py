@@ -39,7 +39,7 @@ def generate_stim_group_and_epoch(action):
 
 def get_raw_inp_data(inp_group):
     # TODO: check tests
-    '''
+    """
     Return raw data from axona inp data
     Parameters
     ----------
@@ -53,7 +53,7 @@ def get_raw_inp_data(inp_group):
         event timestamps
     values : array
             value of the event (bytes)
-    '''
+    """
     event_types = inp_group["event_types"].data
     timestamps = pq.Quantity(inp_group["timestamps"].data,
                              inp_group["timestamps"].attrs["unit"])
@@ -64,7 +64,7 @@ def get_raw_inp_data(inp_group):
 
 def convert_inp_values_to_keys(values):
     # TODO: check tests
-    '''
+    """
     Converts inp values to keys (strings)
     Parameters
     ----------
@@ -74,7 +74,7 @@ def convert_inp_values_to_keys(values):
     -------
     keys : array_like
          pressed keys (strings)
-    '''
+    """
     keys = [None] * len(values)
     for i in range(len(values)):
         if(values[i, 0].astype(int) != 0):
@@ -91,7 +91,7 @@ def convert_inp_values_to_keys(values):
 
 def get_key_press_events(inp_group):
     # TODO: check tests
-    '''
+    """
     Parameters
     ----------
     inp_group : exdir.Group
@@ -100,7 +100,7 @@ def get_key_press_events(inp_group):
     -------
     data : dict
            dict with pressed keys and corrosponding timestamps
-    '''
+    """
     event_types, timestamps, values = get_raw_inp_data(inp_group)
 
     data = {}
@@ -114,7 +114,7 @@ def get_key_press_events(inp_group):
 
 def _find_identical_trialing_elements(values):
     # TODO: check tests
-    '''
+    """
     Finds indices of the first elements when there are two or more
     trialing elements with the same value
     Parameters
@@ -125,7 +125,7 @@ def _find_identical_trialing_elements(values):
     -------
     ids : list
              list of indices
-    '''
+    """
     ids = []
     value_id = 0
     samples_count = len(values)
@@ -149,7 +149,7 @@ def _find_identical_trialing_elements(values):
 
 def get_synced_orientation_data(timestamps, values):
     # TODO: check tests
-    '''
+    """
     Converts inp values to degrees
     Parameters
     ----------
@@ -165,7 +165,7 @@ def get_synced_orientation_data(timestamps, values):
                stimulus onset times
     t_blank : array of quantities
                 stimulus offset times
-    '''
+    """
     orientations = None
     t_stim = None
     t_blank = None
@@ -205,7 +205,7 @@ def get_synced_orientation_data(timestamps, values):
 def get_grating_stimulus_events(inp_group, mode="orientation"):
     # TODO: check tests
     # TODO: add more read modes if necessary
-    '''
+    """
     Parameters
     ----------
     inp_group : exdir.Group
@@ -216,7 +216,7 @@ def get_grating_stimulus_events(inp_group, mode="orientation"):
            dict with grating data and blank times.
            grating data includes timestamps and
            grating parameters (e.g. orientation)
-    '''
+    """
     t_blank, t_stim, grating_param = None, None, None
     event_types, timestamps, values = get_raw_inp_data(inp_group)
 
