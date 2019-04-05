@@ -2,6 +2,10 @@ import quantities as pq
 import numpy as np
 import neo
 import os
+import pathlib
+import exdir
+import exdir.plugins.quantities
+import exdir.plugins.git_lfs
 
 
 def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
@@ -541,3 +545,61 @@ def get_all_units_trials(actions, time_offset=0*pq.ms):
         warnings.warn("action without cell module were found: {}".format(without_cell_module))
 
     return units_trials
+
+
+def load_spiketrains(data_path, channel_idx=None, remove_label='noise'):
+    io = neo.ExdirIO(str(data_path), plugins=[exdir.plugins.quantities, exdir.plugins.git_lfs.Plugin(verbose=True)])
+    if channel_idx is None:
+        blk = io.read_block()
+        sptr = blk.segments[0].spiketrains
+    else:
+        blk = io.read_block(channel_group_idx=channel_idx)
+        channels = blk.channel_indexes
+        chx = channels[0]
+        sptr = [u.spiketrains[0] for u in chx.units]
+    if remove_label is not None:
+        if 'cluster_group' in sptr[0].annotations.keys():
+            sptr = [s for s in sptr if remove_label not in s.annotations['cluster_group']]
+        else:
+            print("Data have to be curated with phy to remove noise. Returning all spike trains")
+    return sptr
+
+
+def load_epochs(data_path):
+    #TODO
+    io = neo.ExdirIO(str(data_path), plugins=[exdir.plugins.quantities, exdir.plugins.git_lfs])
+    blk = io.read_block(channel_group_idx=0)
+    seg = blk.segments[0]
+    epochs = seg.epochs
+    return epochs
+
+
+def load_LFP(data_path):
+    f = exdir.File(data_path, 'r', plugins=[exdir.plugins.quantities])
+    # LFP
+    t_stop = f.attrs['session_duration']
+    _lfp = f['processing']['electrophysiology']['channel_group_0']['LFP']
+    keys = list(_lfp.keys())
+    electrode_value = [_lfp[key]['data'].value.flatten() for key in keys]
+    electrode_idx = [_lfp[key].attrs['electrode_idx'] for key in keys]
+    sampling_rate = _lfp[keys[0]].attrs['sample_rate']
+    units = _lfp[keys[0]]['data'].attrs['unit']
+    LFP = np.r_[[_lfp[key]['data'].value.flatten() for key in keys]].T
+    #LFP = (LFP.T - np.median(np.array(LFP), axis=-1)).T #CMR reference
+    #LFP = (LFP.T - LFP[:, 0]).T # use topmost channel as reference
+    LFP = LFP[:, np.argsort(electrode_idx)]
+
+    LFP = neo.AnalogSignal(LFP,
+                           units=units, t_stop=t_stop, sampling_rate=sampling_rate)
+    LFP = LFP.rescale('mV')
+    return LFP.T
+
+
+def get_data_path(action):
+    action_path = action._backend.path
+    project_path = action_path.parent.parent
+    print(project_path)
+    # data_path = action.data['main']
+    data_path = str(pathlib.Path(pathlib.PureWindowsPath(action.data['main'])))
+    print(data_path)
+    return project_path / data_path
