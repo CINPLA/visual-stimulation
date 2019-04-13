@@ -36,7 +36,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
     """
     if not isinstance(data, type(np.empty(0))):
         msg = "data has to be numpy.array, and not {}".format(type(data))
-        raise AttributeError(msg)
+        raise TypeError(msg)
 
     weights = np.linspace(weight_start, weight_end, len(data))
     print(weights)
