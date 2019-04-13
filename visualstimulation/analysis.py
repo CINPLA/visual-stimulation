@@ -3,7 +3,7 @@ import quantities as pq
 import warnings
 
 
-def compute_circular_variance(rates, orients):
+def compute_circular_variance(rates, orients, normalise=False):
     """
     calculates circular variance (see Ringach 2002)
     Parameters
@@ -12,18 +12,23 @@ def compute_circular_variance(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
         circular variance
     """
 
+    if normalise is True:
+        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+
     orients = orients.rescale(pq.rad)
     R = np.sum(rates * np.exp(1j*2*orients.magnitude)) / np.sum(rates)
     return 1 - np.absolute(R)
 
 
-def compute_dsi(rates, orients):
+def compute_dsi(rates, orients, normalise=False):
     """
     calculates direction selectivity index
     Parameters
@@ -32,12 +37,17 @@ def compute_dsi(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
         direction selectivity index
     """
-    from .helper import wrap_angle, find_nearest
+    from visualstimulation.helper import wrap_angle, find_nearest
+
+    if normalise is True:
+        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -70,10 +80,10 @@ def compute_osi(rates, orients, normalise=False):
     out : float
         orientation selectivity index
     """
-    from .helper import wrap_angle, find_nearest
+    from visualstimulation.helper import wrap_angle, find_nearest
 
     if normalise is True:
-        n_rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -110,8 +120,8 @@ def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
         (initial weight, last weight) ===(generate graident)==> (initial weight, ..., last weight)
     """
     from elephant.statistics import mean_firing_rate
-    from .helper import convert_string_to_quantity_scalar
-    from .utils import generate_gradiently_weighed_data as ggwd
+    from visualstimulation.helper import convert_string_to_quantity_scalar
+    from visualstimulation.utils import generate_gradiently_weighed_data as ggwd
 
     unit_orients = pq.deg
     unit_rates = pq.Hz
@@ -138,7 +148,7 @@ def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
     return rates, orients
 
 
-def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.deg):
+def fit_orient_tuning_curve(rates, orients, func, guess, bounds, normalise=False, binsize=1*pq.deg, ):
     # TODO: write tests
     """
     Use non-linear least squares to fit a function to
@@ -155,6 +165,8 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
         Initial guess for the parameters.
     bounds: None, scalar, or N-length sequence, optional
         bounds for intervals
+    normalise : bool
+        Feature scaling; true or false
     binsize: float/quantity scalar
         Resolution of fitted curve.
     Returns
@@ -169,6 +181,10 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
     """
 
     from scipy import optimize
+
+    if normalise is True:
+        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+
     params, params_cov = optimize.curve_fit(f=func,
                                             xdata=orients.rescale(pq.deg).magnitude,
                                             ydata=rates.magnitude,
@@ -228,10 +244,12 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
                  kernel=None, search_stop=None, sampling_period=None):
     # TODO: write tests
     from visualstimulation.utils import make_spiketrain_trials
-    warnings.warn("This function is not tested")
-    assert trials != unit
     import neo
     import elephant
+
+    warnings.warn("This function is not tested")
+    assert trials != unit
+
     if trials is None:
         trials = make_spiketrain_trials(epo=epo, unit=unit, t_start=t_start,
                                         t_stop=t_stop)

@@ -3,10 +3,10 @@ import matplotlib
 import numpy as np
 import seaborn as sns
 
-from .utils import make_orientation_trials
+from visualstimulation.utils import make_orientation_trials
 
 
-def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, params={}):
+def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=False, params={}):
     """
     Direction polar tuning curve
     Parameters
@@ -15,6 +15,7 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, params={}):
     rates : The spikerate during orientation presentation
     ax : matplotlib axes
     transparancy : transparancy of polar plot
+    normalise : Bool. Feature scaling
     params : keyword arguements for the plot function
     Returns
     -------
@@ -27,6 +28,10 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, params={}):
     if ax is None:
         fig, ax = plt.subplots()
         ax = plt.subplot(111, projection="polar")
+
+    if normalise is True:
+        rates = (rates - rates.min()) / (rates.max() - rates.min())
+        ax.set_ylabel("Normalised frequency (Hz)")
 
     ax.plot(orients, rates, "-", **params)
     ax.fill(orients, rates, alpha=transperancy)

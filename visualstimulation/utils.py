@@ -80,7 +80,8 @@ def make_orientation_trials(trials, unit=pq.deg):
         OrderedDict with orients as keys and trials as values.
     """
     from collections import defaultdict, OrderedDict
-    from .helper import convert_quantity_scalar_to_string, rescale_orients, convert_string_to_quantity_scalar
+    from visualstimulation.helper import convert_quantity_scalar_to_string, rescale_orients, convert_string_to_quantity_scalar
+
     sorted_trials = defaultdict(list)
     rescale_orients(trials, unit)
 
