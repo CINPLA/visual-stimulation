@@ -4,22 +4,27 @@ import neo
 import os
 
 
-def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
+def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
     """
     Creates weighed data using gradients from weight_start to weight_end.
-    Example:
-    In:
-    Weight
-    ([1.        , 0.94444444, 0.88888889, 0.83333333, 0.77777778,
-       0.72222222, 0.66666667, 0.61111111, 0.55555556, 0.5       ])
-    Data
-    [2, 5, 7, 4, 8, 10, 3, 7, 3, 5]
 
-    Out: Data * weight
+    Example
+    -------
+    >>> A = np.array([2, 5, 7, 4, 8, 10, 3, 7, 3, 5])
+    >>> generate_gradiently_weighed_data(data=A)
+    array([2.        , 4.72222222, 6.22222222, 3.33333333, 6.22222222,
+          7.22222222, 2.        , 4.27777778, 1.66666667, 2.5       ])
+
+    Note
+    -------
+    In the example above the following weights are generated:
+    array([1.        , 0.94444444, 0.88888889, 0.83333333, 0.77777778,
+           0.72222222, 0.66666667, 0.61111111, 0.55555556, 0.5       ])
+
     Parameters
     ----------
     data : numpy.array
-        0D data
+        0D numpy.array with data to be weighed
     weight_start : int, float
         Initial weight
     weight_end : int, float
@@ -27,10 +32,14 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0):
     Returns
     ------
     out : numpy.array
-    Weighed data
+    Weighed data (data * weight)
     """
+    if not isinstance(data, type(np.empty(0))):
+        msg = "data has to be numpy.array, and not {}".format(type(data))
+        raise AttributeError(msg)
 
     weights = np.linspace(weight_start, weight_end, len(data))
+    print(weights)
     weighed_data = data * weights
     return weighed_data
 

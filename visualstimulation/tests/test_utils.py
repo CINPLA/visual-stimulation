@@ -23,7 +23,3 @@ def test_generate_gradiently_weighed_data():
     weighed_A = generate_gradiently_weighed_data(data=A, weight_start=weight_start, weight_end=weight_end)
 
     assert all(np.isclose(expected_A, weighed_A))
-
-
-if __name__ == "__main__":
-    test_generate_gradiently_weighed_data()

@@ -1,3 +1,4 @@
+from sklearn.preprocessing import minmax_scale
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
@@ -30,8 +31,12 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=Fals
         ax = plt.subplot(111, projection="polar")
 
     if normalise is True:
-        rates = (rates - rates.min()) / (rates.max() - rates.min())
+        rates = minmax_scale(rates)
         ax.set_ylabel("Normalised frequency (Hz)")
+    else:
+        ax.set_ylabel("Frequency (Hz)")
+
+    ax.set_xlabel("Orientation angle")
 
     ax.plot(orients, rates, "-", **params)
     ax.fill(orients, rates, alpha=transperancy)

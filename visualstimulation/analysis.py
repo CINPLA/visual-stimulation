@@ -1,3 +1,4 @@
+from sklearn.preprocessing import minmax_scale
 import numpy as np
 import quantities as pq
 import warnings
@@ -21,7 +22,7 @@ def compute_circular_variance(rates, orients, normalise=False):
     """
 
     if normalise is True:
-        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+        rates = minmax_scale(rates)
 
     orients = orients.rescale(pq.rad)
     R = np.sum(rates * np.exp(1j*2*orients.magnitude)) / np.sum(rates)
@@ -47,7 +48,7 @@ def compute_dsi(rates, orients, normalise=False):
     from visualstimulation.helper import wrap_angle, find_nearest
 
     if normalise is True:
-        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+        rates = minmax_scale(rates)
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -83,7 +84,7 @@ def compute_osi(rates, orients, normalise=False):
     from visualstimulation.helper import wrap_angle, find_nearest
 
     if normalise is True:
-        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+        rates = minmax_scale(rates)
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -183,7 +184,7 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, normalise=False
     from scipy import optimize
 
     if normalise is True:
-        rates = ( (rates - rates.min()) / (rates.max() - rates.min()) ) * pq.Hz
+        rates = minmax_scale(rates)
 
     params, params_cov = optimize.curve_fit(f=func,
                                             xdata=orients.rescale(pq.deg).magnitude,
