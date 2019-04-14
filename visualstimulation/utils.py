@@ -69,7 +69,7 @@ def minmax_scale(data, units=None):
         return scaled_data * units
     elif units is True:
         if not hasattr(spiketrain, 'units'):
-            msg = "Data array has not unit, but units=True"
+            msg = "Data doesn't have a unit, but units is True"
             raise AttributeError(msg)
         return scaled_data * data.units
     else:
