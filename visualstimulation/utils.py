@@ -38,7 +38,6 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
         raise TypeError(msg)
 
     weights = np.linspace(weight_start, weight_end, len(data))
-    print(weights)
     weighed_data = data * weights
     return weighed_data
 
