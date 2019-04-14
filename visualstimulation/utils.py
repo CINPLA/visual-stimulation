@@ -31,17 +31,33 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
         Last weight
     Returns
     ------
-    out : numpy.array
-    Weighed data (data * weight)
+    out : numpy.array(Weighed data); data * weight
     """
     if not isinstance(data, type(np.empty(0))):
         msg = "data has to be numpy.array, and not {}".format(type(data))
-        raise AttributeError(msg)
+        raise TypeError(msg)
 
     weights = np.linspace(weight_start, weight_end, len(data))
     print(weights)
     weighed_data = data * weights
     return weighed_data
+
+
+def minmax_scale(data):
+    """Transforms features by scaling each feature to a given range.
+
+    Parameters
+    ----------
+    data : numpy.array
+        0D numpy.array with data to be weighed
+    Returns
+    ------
+    out : 
+    """
+    if not isinstance(data, type(np.empty(0))):
+        msg = "data has to be numpy.array, and not {}".format(type(data))
+        raise TypeError(msg)
+    return (data - data.min()) / (data.max() - data.min())
 
 
 def make_stimulus_off_epoch(epo, include_boundary=False):

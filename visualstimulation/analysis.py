@@ -1,8 +1,8 @@
-from sklearn.preprocessing import minmax_scale
 import numpy as np
 import quantities as pq
 import warnings
 
+from visualstimulation.utils import minmax_scale
 
 def compute_circular_variance(rates, orients, normalise=False):
     """

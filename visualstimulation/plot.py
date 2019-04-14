@@ -1,10 +1,9 @@
-from sklearn.preprocessing import minmax_scale
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 import seaborn as sns
 
-from visualstimulation.utils import make_orientation_trials
+from visualstimulation.utils import make_orientation_trials, minmax_scale
 
 
 def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=False, params={}):
