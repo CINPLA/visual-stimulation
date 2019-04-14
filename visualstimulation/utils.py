@@ -52,7 +52,7 @@ def minmax_scale(data):
         0D numpy.array with data to be weighed
     Returns
     ------
-    out : 
+    out : minmax scaled ([0, 1]) numpy.array
     """
     if not isinstance(data, type(np.empty(0))):
         msg = "data has to be numpy.array, and not {}".format(type(data))
