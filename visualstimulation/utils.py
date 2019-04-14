@@ -44,7 +44,8 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
 
 
 def minmax_scale(data):
-    """Transforms features by scaling each feature to a given range.
+    """
+    Transforms features by scaling each feature to [0, 1]
 
     Parameters
     ----------
