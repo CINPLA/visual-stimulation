@@ -72,9 +72,6 @@ def minmax_scale(data, units=None):
             msg = "Data doesn't have a unit, but units is True"
             raise AttributeError(msg)
         return scaled_data * data.units
-    else:
-        msg = "type(units)={} is invalid".format(type(units))
-        raise TypeError(msg)
 
 
 def make_stimulus_off_epoch(epo, include_boundary=False):
