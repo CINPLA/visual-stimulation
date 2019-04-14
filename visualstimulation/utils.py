@@ -42,7 +42,7 @@ def generate_gradiently_weighed_data(data, weight_start=1, weight_end=0.5):
     return weighed_data
 
 
-def minmax_scale(data):
+def minmax_scale(data, units=None):
     """
     Transforms features by scaling each feature to [0, 1]
 
@@ -50,6 +50,10 @@ def minmax_scale(data):
     ----------
     data : numpy.array
         0D numpy.array with data to be weighed
+    units : None; quantity.unitquantity; bool
+        None or False, no action
+        True, assign data.unit to every scaled element
+        quantity.unitquantity, assign unit to every scaled element        
     Returns
     ------
     out : minmax scaled ([0, 1]) numpy.array
@@ -57,7 +61,20 @@ def minmax_scale(data):
     if not isinstance(data, type(np.empty(0))):
         msg = "data has to be numpy.array, and not {}".format(type(data))
         raise TypeError(msg)
-    return (data - data.min()) / (data.max() - data.min())
+
+    scaled_data = (data - data.min()) / (data.max() - data.min())
+    if units is None or units is False:
+        return scaled_data
+    elif isinstance(units, pq.unitquantity.UnitQuantity):
+        return scaled_data * units
+    elif units is True:
+        if not hasattr(spiketrain, 'units'):
+            msg = "Data array has not unit, but units=True"
+            raise AttributeError(msg)
+        return scaled_data * data.units
+    else:
+        msg = "type(units)={} is invalid".format(type(units))
+        raise TypeError(msg)
 
 
 def make_stimulus_off_epoch(epo, include_boundary=False):
