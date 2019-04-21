@@ -2,8 +2,9 @@ import numpy as np
 import quantities as pq
 import warnings
 
+from visualstimulation.utils import minmax_scale
 
-def compute_circular_variance(rates, orients):
+def compute_circular_variance(rates, orients, normalise=False):
     """
     calculates circular variance (see Ringach 2002)
     Parameters
@@ -12,17 +13,23 @@ def compute_circular_variance(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
         circular variance
     """
+
+    if normalise is True:
+        rates = minmax_scale(rates)
+
     orients = orients.rescale(pq.rad)
     R = np.sum(rates * np.exp(1j*2*orients.magnitude)) / np.sum(rates)
     return 1 - np.absolute(R)
 
 
-def compute_dsi(rates, orients):
+def compute_dsi(rates, orients, normalise=False):
     """
     calculates direction selectivity index
     Parameters
@@ -31,12 +38,17 @@ def compute_dsi(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
         direction selectivity index
     """
     from visualstimulation.helper import wrap_angle, find_nearest
+
+    if normalise is True:
+        rates = minmax_scale(rates)
 
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
@@ -53,7 +65,7 @@ def compute_dsi(rates, orients):
     return (R_pref - R_opposite) / (R_pref + R_opposite)
 
 
-def compute_osi(rates, orients):
+def compute_osi(rates, orients, normalise=False):
     """
     calculates orientation selectivity index
     Parameters
@@ -62,6 +74,8 @@ def compute_osi(rates, orients):
         array of firing rates
     orients : quantity array
         array of orientations
+    normalise : bool
+        Feature scaling; true or false
     Returns
     -------
     out : float
@@ -69,13 +83,16 @@ def compute_osi(rates, orients):
     """
     from visualstimulation.helper import wrap_angle, find_nearest
 
+    if normalise is True:
+        rates = minmax_scale(rates)
+
     orients = orients.rescale(pq.deg)
     pref_orient = orients[np.argmax(rates)]
     ortho = wrap_angle(pref_orient.rescale(pq.deg).magnitude + 90, wrap_range=360.)*pq.deg
 
     ortho_id, nearest_ortho = find_nearest(array=orients, value=ortho)
     if ortho != nearest_ortho:
-        warnings.warn("ortho angle ({}) wrt pref orient ({}) not find in orients, using nearest angle ({}) in orient".format(ortho, pref_orient, nearest_ortho))
+        warnings.warn("ortho angle ({}) wrt pref orient ({}) not found in orients, using nearest angle ({}) in orient".format(ortho, pref_orient, nearest_ortho))
 
     R_pref = rates.max()
     R_ortho = rates[ortho_id]
@@ -83,8 +100,8 @@ def compute_osi(rates, orients):
     return (R_pref - R_ortho) / (R_pref + R_ortho)
 
 
-def compute_orientation_tuning(orient_trials):
-    '''
+def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
+    """
     Calculates the mean firing rate for each orientation
 
     Parameters
@@ -98,9 +115,14 @@ def compute_orientation_tuning(orient_trials):
         average rates
     orients : quantity array
         sorted stimulus orientations
-    '''
+    weigh: bool; default: False
+        Use gradiently weighed data
+    weights: tuple, list; default: (1, 0.6)
+        (initial weight, last weight) ===(generate graident)==> (initial weight, ..., last weight)
+    """
     from elephant.statistics import mean_firing_rate
     from visualstimulation.helper import convert_string_to_quantity_scalar
+    from visualstimulation.utils import generate_gradiently_weighed_data as ggwd
 
     unit_orients = pq.deg
     unit_rates = pq.Hz
@@ -113,8 +135,13 @@ def compute_orientation_tuning(orient_trials):
         orient = convert_string_to_quantity_scalar(orient)
         rate = 0 * unit_rates
 
-        for trial in trials:
-            rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
+        if weigh is True:
+            for trial in trials:
+                weighed_trial = ggwd(trial, weight_start=weights[0], weight_end=weights[1])
+                rate += mean_firing_rate(weighed_trial, trial.t_start, trial.t_stop)
+        else:
+            for trial in trials:
+                rate += mean_firing_rate(trial, trial.t_start, trial.t_stop)
 
         rates[i] = rate / len(trials)
         orients[i] = orient.rescale(unit_orients)
@@ -122,7 +149,7 @@ def compute_orientation_tuning(orient_trials):
     return rates, orients
 
 
-def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.deg):
+def fit_orient_tuning_curve(rates, orients, func, guess, bounds, normalise=False, binsize=1*pq.deg, ):
     # TODO: write tests
     """
     Use non-linear least squares to fit a function to
@@ -139,6 +166,8 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
         Initial guess for the parameters.
     bounds: None, scalar, or N-length sequence, optional
         bounds for intervals
+    normalise : bool
+        Feature scaling; true or false
     binsize: float/quantity scalar
         Resolution of fitted curve.
     Returns
@@ -153,6 +182,10 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
     """
 
     from scipy import optimize
+
+    if normalise is True:
+        rates = minmax_scale(rates)
+
     params, params_cov = optimize.curve_fit(f=func,
                                             xdata=orients.rescale(pq.deg).magnitude,
                                             ydata=rates.magnitude,
@@ -167,7 +200,7 @@ def fit_orient_tuning_curve(rates, orients, func, guess, bounds, binsize=1*pq.de
 
 def compute_spontan_rate(chxs, stim_off_epoch):
     # TODO: write tests
-    '''
+    """
     Calculates spontaneous firing rate
 
     Parameters
@@ -181,7 +214,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     -------
     out : defaultdict(dict)
         rates[channel_index_name][unit_id] = spontaneous rate
-    '''
+    """
     from collections import defaultdict
     from elephant.statistics import mean_firing_rate
     from visualstimulation.utils import make_spiketrain_trials
@@ -191,7 +224,7 @@ def compute_spontan_rate(chxs, stim_off_epoch):
 
     for chx in chxs:
         for un in chx.units:
-            cluster_group = un.annotations.get('cluster_group') or 'noise'
+            cluster_group = un.annotations.get("cluster_group") or "noise"
             if cluster_group.lower() != "noise":
                 sptr = un.spiketrains[0]
                 unit_id = un.annotations["cluster_id"]
@@ -212,10 +245,12 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
                  kernel=None, search_stop=None, sampling_period=None):
     # TODO: write tests
     from visualstimulation.utils import make_spiketrain_trials
-    warnings.warn("This function is not tested")
-    assert trials != unit
     import neo
     import elephant
+
+    warnings.warn("This function is not tested")
+    assert trials != unit
+
     if trials is None:
         trials = make_spiketrain_trials(epo=epo, unit=unit, t_start=t_start,
                                         t_stop=t_stop)
@@ -225,11 +260,11 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
         if search_stop is None:
             search_stop = t_stop
     trial = neo.SpikeTrain(times=np.array([st for trial in trials
-                                           for st in trial.times.rescale('s')])*pq.s,
+                                           for st in trial.times.rescale("s")])*pq.s,
                            t_start=t_start, t_stop=t_stop)
     rate = elephant.statistics.instantaneous_rate(trial, sampling_period,
                                                   kernel=kernel, trim=True)/len(trials)
-    rate_mag = rate.rescale('Hz').magnitude.reshape(len(rate))
+    rate_mag = rate.rescale("Hz").magnitude.reshape(len(rate))
     if not any(rate_mag):
         return np.nan, rate
     else:
@@ -238,7 +273,7 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
         # spk, ind = find_max_peak(rate_mag[mask])
         krit1 = rate_mag[mask].mean() + rate_mag[mask].std() > rate_mag[spont_mask].mean() + rate_mag[spont_mask].std()
         spike_mask = (trial.times > 0*pq.ms) & (trial.times < search_stop)
-        krit2 = len(trial.times[spike_mask])/search_stop.rescale('s') > 1.*pq.Hz
+        krit2 = len(trial.times[spike_mask])/search_stop.rescale("s") > 1.*pq.Hz
         if not krit1 and krit2:
             return np.nan, rate
         t0 = 0*pq.ms

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup
-import os
-
 from setuptools import setup, find_packages
+
 
 long_description = open("README.md").read()
 
@@ -12,8 +10,8 @@ install_requires = [
     'matplotlib',
     'seaborn',
     'elephant',
-    'neo-python',
     'quantities',
+    'neo'
 ]
 
 extras_require = {
