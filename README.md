@@ -27,6 +27,8 @@ Analysis for experiments with visual stimulation e.g. drifting gratings.
 
 ### Developers
 - `analysis.py`: contains different analysis functions (e.g. `compute_dsi`)
-- `utils.py`: contains functions for organizing ànd getting data (e.g. create trials)
+- `data_processing.py`: contains functions for organizing ànd getting data (e.g. create trials)
 - `helper.py`: contains helper functions.
 - `axona_helper.py`: extracts stimulus data from axona specific files. A similar function to `generate_stim_group_and_epoch()` should be implemented if other setups are used.
+- `utils.py`: utility functions.
+
