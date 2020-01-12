@@ -83,7 +83,7 @@ def generate_grating_stimulus_epoch(exdir_path, timestamps, durations, data):
     exdir_file = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     epochs = exdir_file.require_group("epochs")
     stim_epoch = epochs.require_group("visual_stimulus")
-    stim_epoch.attrs["type"] = "visual_stimulus"
+    stim_epoch.attrs["provenance"] = "psychstim"
     times = stim_epoch.require_dataset("timestamps", data=timestamps)
     times.attrs["num_samples"] = len(timestamps)
     durations = stim_epoch.require_dataset("durations", data=durations)
@@ -145,26 +145,6 @@ def _read_epoch(exdir_file, path, lazy=False):
                 lazy_shape=lazy_shape, **annotations)
 
     return epo
-
-
-def get_epoch(epochs, epoch_type):
-    """
-    Returns epoch with matching name
-    Parameters
-    ----------
-    epochs : list
-        list of neo.core.Epoch
-    epoch_type : str
-        epoch type (name)
-    Returns
-    -------
-    out : neo.core.Epoch
-    """
-    for epoch in epochs:
-        if epoch_type == epoch.annotations.get("type", None):
-            return epoch
-    else:
-        raise ValueError("epoch not found", epoch_type)
 
 # Spiketrains #################################################################################
 def load_spiketrains(data_path, channel_group=None, load_waveforms=False, lim=None):
@@ -252,7 +232,7 @@ def _get_duration(data_path):
     return f.attrs['session_duration'].rescale('s')
 
 # Trails #################################################################################
-def get_stimulus_trials(exdir_path, epochs):
+def get_stimulus_trials(exdir_path, stimulus_epoch):
     """
     Returns stimulus trials of the action
     Parameters
@@ -267,8 +247,7 @@ def get_stimulus_trials(exdir_path, epochs):
     f = exdir.File(exdir_path, plugins=[exdir.plugins.quantities])
     ch_grps = _get_channel_groups(exdir_path)
     ch_grps_sptrs = [load_spiketrains(exdir_path, ch_grp) for ch_grp in ch_grps]
-    stim_epoch = get_epoch(epochs, "visual_stimulus")
-    stim_trials = _make_stimulus_trials(ch_grps_sptrs, stim_epoch)
+    stim_trials = _make_stimulus_trials(ch_grps_sptrs, stimulus_epoch)
 
     return stim_trials
 
