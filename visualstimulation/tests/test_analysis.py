@@ -150,12 +150,12 @@ def test_make_stimulus_off_epoch():
 
     assert(stim_off_epoch.times == np.linspace(1, 10, 10)).all()
     assert(stim_off_epoch.durations == np.zeros(10)).all()
-    assert(stim_off_epoch.labels == [None]*10)
+    assert(stim_off_epoch.labels == [None]*10).all()
 
     stim_off_epoch = make_stimulus_off_epoch(stim_epoch, include_boundary=True)
     assert(stim_off_epoch.times == np.linspace(0, 10, 11)).all()
     assert(stim_off_epoch.durations == np.zeros(11)).all()
-    assert(stim_off_epoch.labels == [None]*11)
+    assert(stim_off_epoch.labels == [None]*11).all()
 
     times = np.arange(0.5, 11, 0.5)[::2] * pq.s
     durations = np.ones(len(times)) * 0.5 * pq.s
@@ -166,10 +166,10 @@ def test_make_stimulus_off_epoch():
 
     assert(stim_off_epoch.times == np.arange(1, 11, 1)).all()
     assert(stim_off_epoch.durations == np.ones(10) * 0.5).all()
-    assert(stim_off_epoch.labels == [None]*10)
+    assert(stim_off_epoch.labels == [None]*10).all()
 
     stim_off_epoch = make_stimulus_off_epoch(stim_epoch, include_boundary=True)
 
     assert(stim_off_epoch.times == np.arange(0, 11, 1)).all()
     assert(stim_off_epoch.durations == np.ones(11) * 0.5).all()
-    assert(stim_off_epoch.labels == [None]*11)
+    assert(stim_off_epoch.labels == [None]*11).all()
