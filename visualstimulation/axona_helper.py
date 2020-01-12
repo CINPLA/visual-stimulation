@@ -2,7 +2,7 @@ import os
 import quantities as pq
 import exdir
 import numpy as np
-from visualstimulation.utils import (generate_blank_group,
+from visualstimulation.data_processing import (generate_blank_group,
                                      generate_key_event_group,
                                      generate_grating_stimulus_group,
                                      generate_grating_stimulus_epoch
