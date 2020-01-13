@@ -3,7 +3,7 @@ import matplotlib
 import numpy as np
 import seaborn as sns
 
-from visualstimulation.utils import make_orientation_trials, minmax_scale
+import visualstimulation as vs
 
 
 def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=False, params={}):
@@ -30,7 +30,7 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=Fals
         ax = plt.subplot(111, projection="polar")
 
     if normalise is True:
-        rates = minmax_scale(rates)
+        rates = vs.utils.minmax_scale(rates)
         ax.set_ylabel("Normalised frequency (Hz)")
     else:
         ax.set_ylabel("Frequency (Hz)")
