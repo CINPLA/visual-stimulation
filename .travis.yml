@@ -1,21 +1,9 @@
 language: python
+os:
+- linux
 python:
-  # We don't actually use the Travis Python, but this keeps it organized
-  - "3.5"
-  - "3.6"
+- '3.6'
 install:
-  - bash -ex libs/travis-conda-scripts/scripts/travis_install.sh
+- pip install -r requirements.txt
 script:
-  - source libs/travis-conda-scripts/scripts/config.sh
-  - bash -ex libs/travis-conda-scripts/scripts/build.sh
-deploy:
-  - provider: script
-    skip_cleanup: true
-    script: bash -ex libs/travis-conda-scripts/scripts/upload.sh cinpla main
-    on:
-      tags: true
-  - provider: script
-    skip_cleanup: true
-    script: bash -ex libs/travis-conda-scripts/scripts/upload.sh cinpla dev
-    on:
-branch: dev
+- python -m pytest

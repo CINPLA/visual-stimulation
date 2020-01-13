@@ -1,0 +1,10 @@
+numpy
+scipy
+matplotlib
+seaborn
+pytest
+elephant
+neo
+quantities
+exdir
+expipe

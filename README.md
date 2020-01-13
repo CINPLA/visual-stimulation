@@ -1,4 +1,5 @@
 [![codecov](https://codecov.io/gh/CINPLA/visual-stimulation/branch/dev/graph/badge.svg)](https://codecov.io/gh/CINPLA/visual-stimulation)
+[![Build Status](https://travis-ci.org/CINPLA/visual-stimulation.svg?branch=dev)](https://travis-ci.org/CINPLA/visual-stimulation)
 
 
 # visual-stimulation
