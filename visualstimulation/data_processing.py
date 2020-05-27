@@ -4,7 +4,6 @@ import neo
 import exdir 
 import spikeextractors as se
 
-
 def generate_grating_stimulus_group(exdir_path, data, timestamps, mode="None"):
     """
     Generates grating exdir group with timestamp dataset and
@@ -309,9 +308,9 @@ def make_spiketrain_trials(spike_train, epoch, t_start=None, t_stop=None,
     spike_train : neo.SpikeTrain, neo.Unit, numpy.array, quantities.Quantity
     epoch : neo.Epoch
     t_start : quantities.Quantity
-        time before epochs, default is 0 s
+        time after epoch's elements start, default is 0 s
     t_stop : quantities.Quantity
-        time after epochs default is duration of epoch
+        time after epoch's elements start, default is duration of element
     dim : str
         if spike_train is numpy.array, the unit must be provided, e.g. "s"
 
@@ -434,3 +433,145 @@ def make_stimulus_off_epoch(epo, include_boundary=False):
                       times=times)
 
     return off_epoch
+
+
+def find_epoch_difference(ep0, ep1):
+    # create intervaltree for each epoch
+    tree = [it(), it()]
+    ep = [ep0, ep1]
+    for i, t in enumerate(tree):
+        ts = ep[i].times
+        durs = ep[i].durations
+        for t, d in zip(ts, durs):
+            t.addi(t, t+d, _)
+    diff = tree[0] - tree[1]    
+
+def _return_index_in_target_epoch(ep0, ep1):
+    """
+    Return indices of start and stops of query epoch ep0
+    in relation to target epoch ep1.
+    Start and stops of events in ep1 are merged into one
+    long, sorted target array, trgt.
+    Any timepoint is inside/outside an interval if index 
+    is odd/even.
+
+    Parameters
+    ----------
+    ep0 : neo.Epoch
+        Query epoch
+    ep1 : neo.Epoch
+        Target epoch
+   
+    Returns
+    ----------
+    query_starts : Array
+        indices of epoch starts in target array
+    query_stops : Array
+        indices of epoch starts in target array
+    """
+
+    # get start and stop of query epoch
+    ep0_starts = ep0.times.rescale(pq.s).magnitude
+    ep0_durs = ep0.durations.rescale(pq.s).magnitude
+    ep0_stops = ep0_starts + ep0_durs
+
+    # 
+    ep1_starts = ep1.times.rescale(pq.s).magnitude
+    ep1_durs = ep1.durations.rescale(pq.s).magnitude
+    ep1_stops = ep1_starts + ep1_durs
+
+    # make sure start values are sorted
+    assert np.allclose(np.sort(ep0_starts), ep0_starts)
+    assert np.allclose(np.sort(ep1_starts), ep1_starts)
+
+    # we create a target array to contain
+    # (start0, stop0, start1, stop1, ...)
+    trgt = np.zeros(len(ep1_starts)*2)
+    trgt[0::2] = ep1_starts
+    trgt[1::2] = ep1_stops
+
+    query_starts = np.searchsorted(trgt, ep0_starts)
+    query_stops = np.searchsorted(trgt, ep0_stops)
+
+    return query_starts, query_stops
+    
+
+def find_epoch_difference(ep0, ep1):
+    """
+    Return elements of query epoch ep0 that are not in elements of target epoch ep1.
+    
+    Parameters
+    ----------
+    ep0 : neo.Epoch
+    ep1 : neo.Epoch
+    
+    Returns
+    ----------
+    out : neo.Epoch
+        Copy of ep0 that contains only elements outside elements of ep1
+        
+    """
+    query_starts, query_stops = _return_index_in_target_epoch(ep0, ep1)
+
+    def is_odd(num):
+        return num & 0x1
+
+    # determine whether both start and stop are in same interval
+    is_even_starts = ~is_odd(query_starts).astype(bool)
+    is_even_stops = ~is_odd(query_stops).astype(bool)
+    # trgt indices of start and stop have to be the same
+    # otherwise start and stop could be inside two different intervals
+    is_same = query_starts == query_stops
+
+    is_outside_trgt = np.logical_and.reduce((is_even_starts, is_even_stops, is_same))
+
+    # create new epoch
+    starts_new = ep0.times[is_outside_trgt]
+    durs_new = ep0.durations[is_outside_trgt]
+    labels_new = ep0.labels[is_outside_trgt]
+    ep0_new = ep0.duplicate_with_new_data(starts_new, durs_new, labels_new)
+    ep0_new._copy_annotations(ep0)
+
+    return ep0_new
+
+
+def find_epoch_intersection(ep0, ep1):
+    """
+    Return elements of query epoch ep0 that are in elements of target epoch ep1.
+    
+    Parameters
+    ----------
+    ep0 : neo.Epoch
+    ep1 : neo.Epoch
+    
+    Returns
+    ----------
+    out : neo.Epoch
+        Copy of ep0 that contains only elements inside elements of ep1
+        
+    """
+    query_starts, query_stops = _return_index_in_target_epoch(ep0, ep1)
+
+    def is_odd(num):
+        return num & 0x1
+
+    # determine whether both start and stop are in same interval
+    is_odd_starts = is_odd(query_starts).astype(bool)
+    is_odd_stops = is_odd(query_stops).astype(bool)
+    # trgt indices of start and stop have to be the same
+    # otherwise start and stop could be inside two different intervals
+    is_same = query_starts == query_stops
+
+    is_inside_trgt = np.logical_and.reduce((is_odd_starts, is_odd_stops, is_same))
+
+    # create new epoch
+    starts_new = ep0.times[is_inside_trgt]
+    durs_new = ep0.durations[is_inside_trgt]
+    labels_new = ep0.labels[is_inside_trgt]
+    ep0_new = ep0.duplicate_with_new_data(starts_new, durs_new, labels_new)
+    ep0_new._copy_annotations(ep0)
+
+    return ep0_new
+
+    
+    

@@ -1,12 +1,14 @@
 import numpy as np
 import quantities as pq
 import pytest
-
+import pdb
 
 from visualstimulation.analysis import (compute_osi,
                                         compute_dsi,
                                         compute_circular_variance,
                                         compute_spontan_rate,
+                                        calculate_psth,
+                                        calculate_psth_from_trials,
                                         )
 
 
@@ -173,3 +175,61 @@ def test_make_stimulus_off_epoch():
     assert(stim_off_epoch.times == np.arange(0, 11, 1)).all()
     assert(stim_off_epoch.durations == np.ones(11) * 0.5).all()
     assert(stim_off_epoch.labels == [None]*11).all()
+
+
+def test_calculate_psth():
+    from neo.core import Epoch
+    from neo.core import SpikeTrain
+
+    # create epoch
+    times = np.arange(0, 91, 10.) * pq.s
+    durations = np.ones(len(times)) * pq.s
+    labels = np.ones(len(times))
+
+    epoch = Epoch(labels=labels, durations=durations, times=times)
+
+    # create spiketrain, some regular spikes plus some manually inserted ones
+    ts = list(np.arange(2, 93, 10.))
+    ts.append(9)
+    ts = np.array(ts) * pq.s
+    ts = np.sort(ts)
+    st = SpikeTrain(ts, t_stop=110*pq.s)
+
+    # define psth
+    lags = [-5., 5] * pq.s
+    bin_size = 2.5 * pq.s
+
+    # calculate psth
+    psth = calculate_psth(st, epoch, lags, bin_size, unit='rate')
+    psth_target = np.array([0., 0.04, 0.4, 0.])
+    assert np.allclose(psth, psth_target)
+
+def test_calculate_psth_from_trials():
+    from neo.core import Epoch
+    from neo.core import SpikeTrain
+    from visualstimulation.data_processing import make_spiketrain_trials
+
+    # create epoch
+    times = np.arange(0, 91, 10.) * pq.s
+    durations = np.ones(len(times)) * pq.s
+    labels = np.ones(len(times))
+
+    epoch = Epoch(labels=labels, durations=durations, times=times)
+
+    # create spiketrain, some regular spikes plus some manually inserted ones
+    ts = list(np.arange(2, 93, 10.))
+    ts.append(9)
+    ts = np.array(ts) * pq.s
+    ts = np.sort(ts)
+    st = SpikeTrain(ts, t_stop=110*pq.s)
+
+    # define psth
+    lags = [-5., 5] * pq.s
+    bin_size = 2.5 * pq.s
+
+    trials = make_spiketrain_trials(st, epoch, t_start=lags[0], t_stop=lags[1])
+    # calculate psth
+    psth = calculate_psth_from_trials(trials, bin_size, unit='rate')
+    psth_target = np.array([0., 0.04, 0.4, 0.])
+    assert np.allclose(psth, psth_target)
+    
