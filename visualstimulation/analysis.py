@@ -2,6 +2,7 @@ import numpy as np
 import quantities as pq
 import warnings
 
+
 from visualstimulation.utils import minmax_scale
 
 def compute_circular_variance(rates, orients, normalise=False):
@@ -103,12 +104,10 @@ def compute_osi(rates, orients, normalise=False):
 def compute_orientation_tuning(orient_trials, weigh=False, weights=(1, 0.6)):
     """
     Calculates the mean firing rate for each orientation
-
     Parameters
     ----------
     trials : collections.OrderedDict
         OrderedDict with orients as keys and trials as values.
-
     Returns
     -------
     rates : quantity array
@@ -202,14 +201,12 @@ def compute_spontan_rate(chxs, stim_off_epoch):
     # TODO: write tests
     """
     Calculates spontaneous firing rate
-
     Parameters
     ----------
     chxs : list
         list of neo.core.ChannelIndex
     stim_off_epoch : neo.core.Epoch
         stimulus epoch
-
     Returns
     -------
     out : defaultdict(dict)
@@ -292,3 +289,128 @@ def rate_latency(trials=None, epo=None, unit=None, t_start=None, t_stop=None,
             else:
                 t0 = lat_time
         return np.nan, rate
+
+
+def calculate_psth(st, epoch,
+                   lags=[-2, 10]*pq.s,
+                   bin_size=0.01*pq.s,
+                   unit='rate',
+                   return_bins=False):
+    """
+    calculate peristimulus time histogram for given spike train and epoch
+    Parameters
+    ----------
+    st : neo.SpikeTrain
+    epoch : neo.Epoch
+    lags : Quantity list/array
+    bin_size : Quantity scalar
+    unit : None/string, default 'rate'
+       desired output unit, 'count' or 'rate'
+    return_bins : bool
+       whether psth bins should be returned
+    Returns
+    -------
+    psth : Quantitiy array
+    bins : Quantity array
+        optional
+    """
+
+    # check if lags is array like
+    assert hasattr(lags, "__len__")
+    lags = list(lags)
+
+    # rescale to seconds and drop units
+    lags[0] = lags[0].rescale(pq.s).magnitude
+    lags[1] = lags[1].rescale(pq.s).magnitude
+    bin_size = bin_size.rescale(pq.s).magnitude
+
+    # define bins of histogram
+    l0 = lags[0]
+    l1 = lags[1]
+    # make sure right edge is included
+    if np.mod(l1-l0, bin_size) == 0:
+        l1 += 10e-10
+    bins = np.arange(l0, l1, bin_size)
+    
+    # count spikes
+    psth = np.zeros(len(bins)-1, dtype=int)
+    for t_epo in epoch.times:
+        st_ = st.time_slice(t_start=t_epo + lags[0]*pq.s,
+                            t_stop=t_epo + lags[1]*pq.s)
+        ts = st_.times
+        ts -= t_epo
+        ts = ts.rescale(pq.s).magnitude
+
+        hist, _ = np.histogram(ts, bins)
+        psth += hist
+    
+    # rescale to desired unit
+    assert unit in ['count', 'rate'] 
+    if unit == 'rate':
+        # find number of events in epoch
+        n_epoch = len(epoch.times)
+        psth = psth.astype(float)
+        # divide by number of events
+        psth *= 1./n_epoch
+        # scale by binwidth
+        psth *= 1./bin_size
+    elif unit == 'count':
+        pass
+    
+    if return_bins:
+        return psth, bins[:-1]
+    else:
+        return psth
+
+    
+def calculate_psth_from_trials(trials,
+                   bin_size=0.01*pq.s,
+                   unit='rate',
+                   return_bins=False):
+    """
+    calculate psth based on trials
+    """
+    l0 = np.unique([st.t_start for st in trials])
+    assert len(l0) == 1
+    l0 = l0[0]
+    
+    l1 = np.unique([st.t_stop for st in trials])
+    assert len(l1) == 1
+    l1 = l1[0]
+
+    bin_size = bin_size.rescale(pq.s).magnitude
+    
+    if np.mod(l1-l0, bin_size) == 0:
+        l1 += 10e-10
+    bins = np.arange(l0, l1, bin_size)
+
+    n_trials = len(trials)
+    assert n_trials > 1
+
+    # merge spikes
+    spks = np.concatenate([st.times for st in trials])
+
+    #  create histogram
+    psth, bins_hist = np.histogram(spks, bins)
+    bins = bins_hist[:-1]
+
+    # rescale to desired unit
+    assert unit in ['count', 'rate'] 
+    if unit == 'rate':
+        # find number of events in epoch
+        psth = psth.astype(float)
+        # divide by number of events
+        psth *= 1./n_trials
+        # scale by binwidth
+        psth *= 1./bin_size
+        # assign unit
+        psth = psth*pq.Hz
+    elif unit == 'count':
+        pass
+    
+    if return_bins:
+        # assign unit to bins
+        bins = bins*pq.s
+        return psth, bins
+    else:
+        return psth

@@ -3,7 +3,7 @@ import matplotlib
 import numpy as np
 import seaborn as sns
 
-import visualstimulation as vs
+from visualstimulation.utils import make_orientation_trials, minmax_scale
 
 
 def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=False, params={}):
@@ -30,7 +30,7 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=Fals
         ax = plt.subplot(111, projection="polar")
 
     if normalise is True:
-        rates = vs.utils.minmax_scale(rates)
+        rates = minmax_scale(rates)
         ax.set_ylabel("Normalised frequency (Hz)")
     else:
         ax.set_ylabel("Frequency (Hz)")
@@ -47,7 +47,7 @@ def polar_tuning_curve(orients, rates, ax=None, transperancy=0.5, normalise=Fals
 
 
 def plot_raster(trials, color="#3498db", lw=1, ax=None, marker="|", marker_size=45,
-                ylabel="Trials", id_start=0, ylim=None):
+                ylabel="Trials", id_start=0, ylim=None, max_id=300):
     """
     Raster plot of trials
     Parameters
@@ -56,6 +56,7 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker="|", marker_size=
     color : color of spikes
     lw : line width
     ax : matplotlib axes
+    max_id : int, max id number, it will rescale if more trials are there
     Returns
     -------
     out : axes
@@ -67,7 +68,7 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker="|", marker_size=
     spikes = []
     dim = trials[0].times.dimensionality
     for n, trial in enumerate(trials):  # TODO what about empty trials?
-        n += id_start
+        n += id_start / max_id
         spikes.extend(trial.times.magnitude)
         trial_id.extend([n]*len(trial.times))
     if marker_size is None:
@@ -93,4 +94,4 @@ def plot_raster(trials, color="#3498db", lw=1, ax=None, marker="|", marker_size=
     ax.set_xlabel("Times [{}]".format(dim))
     if ylabel is not None:
         ax.set_ylabel(ylabel)
-    return ax
+    return ax, spikes
