@@ -116,6 +116,56 @@ def _return_query_timestamps(epoch_0, epoch_1):
     return query_starts, query_stops
 
 
+def _return_index_in_target_epoch(ep0, ep1):
+    """
+    Return indices of start and stops of query epoch ep0
+    in relation to target epoch ep1.
+    Start and stops of events in ep1 are merged into one
+    long, sorted target array, trgt.
+    Any timepoint is inside/outside an interval if index
+    is odd/even.
+
+    Parameters
+    ----------
+    ep0 : neo.Epoch
+        Query epoch
+    ep1 : neo.Epoch
+        Target epoch
+
+    Returns
+    ----------
+    query_starts : Array
+        indices of epoch starts in target array
+    query_stops : Array
+        indices of epoch starts in target array
+    """
+
+    # get start and stop of query epoch
+    ep0_starts = ep0.times.rescale(pq.s).magnitude      # [0t1. 0t2, ..., 0tn]
+    ep0_durs = ep0.durations.rescale(pq.s).magnitude    # [0dur1, 0dur2, ..., 0durn]
+    ep0_stops = ep0_starts + ep0_durs                   # [0t1+0dur1, 0t2+0dur2, ..., 0tn+0durn]
+
+    #
+    ep1_starts = ep1.times.rescale(pq.s).magnitude      # [1t1, 1t2, ..., 1tn]
+    ep1_durs = ep1.durations.rescale(pq.s).magnitude    # [1dur1, 1dur2, ..., 1durn]
+    ep1_stops = ep1_starts + ep1_durs                   # [1t1+1dur1, 1t2+1dur2, ..., 1tn+1durn]
+
+    # make sure start values are sorted
+    assert np.allclose(np.sort(ep0_starts), ep0_starts)
+    assert np.allclose(np.sort(ep1_starts), ep1_starts)
+
+    # we create a target array to contain
+    # (start0, stop0, start1, stop1, ...)
+    trgt = np.zeros(len(ep1_starts)*2)                  # [0, 0, ..., 0] (1, 2n)
+    trgt[0::2] = ep1_starts                             # [1t1, 0, 1t2, 0, ...]
+    trgt[1::2] = ep1_stops                              # [1t1, 1t1+1dur1, 1t2, 1t2+1dur1, ...]
+
+    query_starts = np.searchsorted(trgt, ep0_starts)    # [idx0t1, idx0t2, ..., idx0tn]
+    query_stops = np.searchsorted(trgt, ep0_stops)      # [idx(0t1+0dur1), idx(0t2+0dur2), ...]
+
+    return query_starts, query_stops
+
+
 def _get_orientation_mask(query, epoch_orient):
 
     # mask matrix, with rows as orientations
@@ -139,7 +189,85 @@ def _get_orientation_mask(query, epoch_orient):
     return mask 
 
 
+def get_difference_orientations(epoch_0, epoch_1, epoch_orient):
+
+    """
+    compute the difference between epoch_0 and epoch_1 and superimpose the orientations in epoch_orient
+
+    Parameters
+    ----------
+    epoch_0: neo.Epoch 
+    epoch_1: neo.Epoch
+    epoch_orient: neo.Epoch 
+        with orientations based on epoch_1 intervals
+
+    Returns
+    -------
+    list:
+        list of neo.Epoch objects copy of epoch_0 containing only elements not inside epoch_1  
+    """
+
+    # queried timestamps
+    query_starts, query_stops = _return_index_in_target_epoch(epoch_0, epoch_1)
+
+    def is_odd(num):
+        return num & 0x1
+
+    # determine whether both start and stop are in same interval
+    is_even_starts = ~is_odd(query_starts).astype(bool) # False: the index is odd, True: the index is even 
+    is_even_stops = ~is_odd(query_stops).astype(bool)   # False: the index is odd, True: the index is even 
+
+    # trgt indices of start and stop have to be the same
+    # otherwise start and stop could be inside two different intervals
+    is_same = query_starts == query_stops
+    
+    # check if start and stop are not in the same interval
+    is_outside_trgt = np.logical_and.reduce((is_even_starts, is_even_stops, is_same))
+
+    # orientation mask 
+    orient_masks = _get_orientation_mask(query=query_starts, epoch_orient=epoch_orient)
+
+    angles = [x for x in range(0, 360, 45)]
+
+    # new epochs 
+    epoch_matrix = []
+
+    for i, angle_mask in enumerate(orient_masks):
+
+        # create new epoch | select only times when the epoch_0 is outside the target 
+        starts_new = epoch_0.times[is_outside_trgt] * angle_mask[is_outside_trgt]
+
+        labels_new = epoch_0.labels[is_outside_trgt] * angle_mask[is_outside_trgt]
+        
+        durs_new = epoch_0.durations[is_outside_trgt] * angle_mask[is_outside_trgt]
+        
+        epoch_0_new = epoch_0.duplicate_with_new_data(starts_new, durs_new, labels_new)
+        epoch_0_new._copy_annotations(epoch_0)
+
+        # record 
+        epoch_0_new.name = f"vis_epoch_{angles[i]}"
+        epoch_matrix += [epoch_0_new]
+
+    return epoch_matrix 
+
+
 def get_intersection_orientations(epoch_0, epoch_1, epoch_orient):
+
+    """
+    compute the intersections of epoch_0 and epoch_1 and superimpose the orientations in epoch_orient
+
+    Parameters
+    ----------
+    epoch_0: neo.Epoch 
+    epoch_1: neo.Epoch
+    epoch_orient: neo.Epoch 
+        with orientations based on epoch_1 intervals
+
+    Returns
+    -------
+    list:
+        list of neo.Epoch objects copy of epoch_0 containing only elements inside epoch_1  
+    """
 
     # queried timestamps
     query_starts, query_stops = _return_query_timestamps(epoch_0, epoch_1)
@@ -160,8 +288,7 @@ def get_intersection_orientations(epoch_0, epoch_1, epoch_orient):
     # orientation mask
     orient_masks = _get_orientation_mask(query=query_starts, epoch_orient=epoch_orient)
 
-
-    angles = [x for x in range(0, 360, 45)]
+    angles = list(range(0, 360, 45))
 
     # new epochs 
     epoch_matrix = []
@@ -180,10 +307,260 @@ def get_intersection_orientations(epoch_0, epoch_1, epoch_orient):
         epoch_0_new = epoch_0.duplicate_with_new_data(starts_new, durs_new, labels_new)
         epoch_0_new._copy_annotations(epoch_0)
 
-        epoch_0_new.name = f'laser_epoch_vis_{angles[i]}°'
+        epoch_0_new.name = f'laser_epoch_vis_{angles[i]}°'  # edit name if necessary
         epoch_matrix += [epoch_0_new]
 
     return epoch_matrix 
+
+
+def get_orientation_vis(epoch_0, epoch_1, epoch_or, from_laser_end=False):
+
+    """
+    compute the difference between epoch_0 [visual stimulation] and epoch_1 [laser epoch] and 
+    superimpose orientations in epoch_or [orientations]. 
+    In this function, the intervals of epoch_0 are calculated either all before or all after the
+    laser session (start: start of first laser interval, end: end of the last laser interval).
+    Then, the orientations for each visual stimulation inverval is calculated
+    
+    
+    Example:
+    visual stimulation interval: |---|
+    laser interval: LLL
+    only visual stimulation: +++
+    orientation: d0
+
+    |-------------------|  |----------------|  |----
+    ++++LLL  LLL  LLL  LLL  LLL  LLL  LLL++++  +++++
+    d3                                          d1
+
+    Parameters
+    ----------
+    epoch_0: neo.Epoch 
+    epoch_1: neo.Epoch 
+    epoch_or: neo.Epoch
+
+    Returns 
+    -------
+    list: 
+        a neo.Epoch for each orientation 
+    """
+
+    # laser data
+    laser_duration = epoch_1.durations[0].magnitude
+    laser_times = iter(epoch_1.times)
+    laser_start = min(epoch_1.times)
+    laser_end = max(epoch_1.times)
+
+    # visualstm data 
+    vis_durations = epoch_0.durations
+
+    # orientations 
+    angles = list(range(0, 360, 45))
+    orientations = epoch_or.labels 
+    
+    # dict for all orientations
+    orient_dict = {}
+    for angle in angles:
+        orient_dict[angle] = {'name': f"vis_only_epoch_{angle}",
+                              'times': np.array([]),
+                              'durations': np.array([]),
+                              'labels': [0],
+                              }
+
+   
+    def record(orient_dict, orientation, onset, durations):
+
+        """
+        record the times and durations in the Epoch of a given orientation 
+        """
+    
+        # retrieve orientation data 
+        loc_times = orient_dict[orientation]['times']
+        loc_durations = orient_dict[orientation]['durations']
+        count = orient_dict[orientation]['labels'][-1]
+        
+        # preprocess new data 
+        onset = np.array(onset).reshape(-1)
+        durations = np.array(durations).reshape(-1)
+
+        # merge 
+        orient_dict[orientation]['times'] = np.concatenate((loc_times, onset))
+        orient_dict[orientation]['durations'] = np.concatenate((loc_durations, durations))
+        orient_dict[orientation]['labels'] += [count + 1]
+
+        return orient_dict
+
+    
+    # loop over all the visual stimulation intervals until the laser interval starts 
+    for i, vis_onset in enumerate(epoch_0):
+    
+        if from_laser_end:
+            if vis_onset.magnitude + vis_durations[i].magnitude < laser_end:
+                continue 
+        else:
+            if vis_onset.magnitude + vis_durations[i].magnitude > laser_start:
+                break 
+        
+        # store data for the ith orientation 
+        orient_dict = record(orient_dict=orient_dict, orientation=orientations[i], \
+                onset=vis_onset.magnitude, durations=vis_durations[i].magnitude)
+   
+
+    # redefine orient_dict as dict of neo.Epochs 
+    new_dict = {}
+    for angle in angles:
+        new_epoch = neo.Epoch(times=orient_dict[angle]['times'] * pq.s,
+                              durations=orient_dict[angle]['durations'] * pq.s,
+                              labels=np.array(orient_dict[angle]['labels'][1:]),
+                              name=f"vis_only_epoch_{angle}") 
+        new_dict[angle] = new_epoch 
+
+    return new_dict
+
+
+def get_diff_orientations(epoch_0, epoch_1, epoch_or):
+
+    """
+    compute the difference between epoch_0 [visual stimulation] and epoch_1 [laser epoch] and 
+    superimpose orientations in epoch_or [orientations]. 
+    In this function, the intervals of epoch_0 are calculated over its entire length and individuated
+    as times in which there is no epoch_1 intervals. Then, the orientations are superimposed.
+    
+    Example:
+    visual stimulation interval: |---|
+    laser interval: LLL
+    only visual stimulation: +++
+    orientation: d0
+
+    |-------------------|  |----------------|
+    ++++LLL++LLL++LLL++LLL  LLL++LLL++LLL++++
+    d3     d3   d3   d3        d1   d1   d1 
+
+    Parameters
+    ----------
+    epoch_0: neo.Epoch 
+    epoch_1: neo.Epoch 
+    epoch_or: neo.Epoch
+
+    Returns 
+    -------
+    list: 
+        a neo.Epoch for each orientation 
+    """
+
+    # laser data
+    laser_duration = epoch_1.durations[0].magnitude
+    laser_times = iter(epoch_1.times)
+    laser_start = min(epoch_1.times)
+    laser_end = max(epoch_1.times)
+
+    # visualstm data 
+    vis_durations = epoch_0.durations
+
+    # orientations 
+    angles = list(range(0, 360, 45))
+    orientations = epoch_or.labels 
+    
+    # dict for all orientations
+    orient_dict = {}
+    for angle in angles:
+        orient_dict[angle] = {'name': f"vis_only_epoch_{angle}",
+                              'times': np.array([]),
+                              'durations': np.array([])
+                              }
+
+   
+    def record(orient_dict, orientation, onset, durations):
+
+        """
+        record the times and durations in the Epoch of a given orientation 
+        """
+    
+        # retrieve orientation data 
+        loc_times = orient_dict[orientation]['times']
+        loc_durations = orient_dict[orientation]['durations']
+        
+        # preprocess new data 
+        onset = np.array(onset).reshape(-1)
+        durations = np.array(durations).reshape(-1)
+
+        # merge 
+        orient_dict[orientation]['times'] = np.concatenate((loc_times, onset))
+        orient_dict[orientation]['durations'] = np.concatenate((loc_durations, durations))
+
+        return orient_dict
+
+    # next laser onset 
+    laser_onset = next(laser_times).magnitude 
+    laser_end = laser_onset + laser_duration
+
+    vis_onset_local = 0.
+    
+    # loop over all the visual stimulation intervals
+    for i, vis_onset in enumerate(epoch_0):
+
+        # previous visual stimulation onset before new actual visual stimulation onset 
+        if vis_onset_local < vis_onset.magnitude:
+            vis_onset_local = vis_onset.magnitude  
+        
+        # duration adjusted for the adjusted visual stimulation onset
+        vis_duration_local = vis_durations[i].magnitude - (vis_onset_local - vis_onset.magnitude)
+        
+        # the visual stimulation interval has no laser stimulation in it 
+        if vis_onset_local + vis_duration_local < laser_onset or laser_onset < 0:
+
+            # store data for the ith orientation 
+            orient_dict = record(orient_dict=orient_dict, orientation=orientations[i], \
+                    onset=vis_onset_local, durations=vis_duration_local)
+            continue 
+ 
+        # the interval ends after the next laser stimulation
+        # define the smaller intervals before the interval ends
+        local_onsets = []
+        local_durations = []
+
+        vis_onset_local = vis_onset.magnitude
+        # loop until the visual stimulation interval is over 
+        while 1:
+            
+            # duration of the visual stimulation before laser onset 
+            #print(laser_onset, vis_onset_local)
+            vis_duration_local = laser_onset - vis_onset_local
+            
+            # append small onset and duration 
+            local_onsets += [vis_onset_local]
+            local_durations += [vis_duration_local]
+
+            # new visual stimulation onset 
+            vis_onset_local = laser_end 
+           
+            # next laser stimulation onset
+            laser_onset = next(laser_times, None)
+            # no more laser intervals
+            if laser_onset is None:
+                laser_onset = -1
+                break 
+            else:
+                laser_onset = laser_onset.magnitude
+            laser_end = laser_onset + laser_duration 
+
+            # exit if the main visual stimulation is finished
+            if vis_onset + vis_durations[i] < laser_onset:
+                break
+
+        # record data for the last intervals 
+        orient_dict = record(orient_dict=orient_dict, orientation=orientations[i], \
+                onset=vis_onset_local, durations=vis_duration_local)
+    
+    # redefine orient_dict as dict of neo.Epochs 
+    new_dict = {}
+    for angle in angles:
+        new_epoch = neo.Epoch(times=orient_dict[angle]['times'] * pq.s,
+                              durations=orient_dict[angle]['durations'] * pq.s,
+                              name=f"vis_only_epoch_{angle}") 
+        new_dict[angle] = new_epoch 
+
+    return new_dict
 
 
 def compute_response(spike_times, stim_times, times, kernel, e_percentile, i_percentile, limit=1e-3):
@@ -395,7 +772,7 @@ class UnitsName:
         print('units:\n', self.names)
 
 
-def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=300, redbar=True, light_color=False):
+def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=300, redbar=True, light_color=False, marker_size=None):
     """
     Raster plot of trials
     Parameters
@@ -423,16 +800,24 @@ def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=
     """
 
     # default settings
-    color = "gray" if light_color else "#3498db"
-    transparency = 0.5 if light_color else 1
+    color = "black" if light_color else "#3498db"
+    transparency = 0.6 if light_color else 1
     lw = 1
     marker = "|"
-    marker_size = 45 
-    id_scale = max_id / len(trials)
+    marker_size = marker_size if marker_size is not None else 1
+
+    if max_id is None:
+        id_scale = len(trials)
+    else:
+        id_scale = max_id / len(trials)
 
     from matplotlib.ticker import MaxNLocator
+
+    # get axis
     if ax is None:
         fig, ax = plt.subplots()
+    
+    # obtain spike-trains
     trial_id = []
     spikes = []
     dim = trials[0].times.dimensionality
@@ -440,6 +825,8 @@ def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=
         n += id_start 
         spikes.extend(trial.times.magnitude)
         trial_id.extend([n*id_scale]*len(trial.times))
+    
+    # marker setings
     if marker_size is None:
         heights = 6000./len(trials)
         if heights < 0.9:
@@ -451,9 +838,11 @@ def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=
     ax.scatter(spikes, trial_id, marker=marker, s=heights, lw=lw, color=color,
                edgecolors="face", alpha=transparency)
     if ylim is None:
-        ax.set_ylim(-0.5, len(trials)-0.5)
+        #ax.set_ylim(-0.5, len(trials)-0.5)
+        pass
     elif ylim is True:
-        ax.set_ylim(ylim)
+        #ax.set_ylim(ylim)
+        pass
     else:
         pass
 
@@ -463,7 +852,7 @@ def plot_raster(trials, ylabel="Trials", id_start=0, ylim=None, ax=None, max_id=
         #y_ax.set_major_locator(MaxNLocator(integer=True))
         t_start = trials[0].t_start.rescale(dim)
         t_stop = trials[0].t_stop.rescale(dim)
-        ax.set_xlim([t_start, t_stop])
+        #ax.set_xlim([t_start, t_stop])
         ax.set_xlabel("Times [{}]".format(dim))
         if ylabel is not None:
             ax.set_ylabel(ylabel)
@@ -554,17 +943,20 @@ def compute_kde(trials: list, std: str, window: float, percentile=95, \
             ax.plot(spikes, np.ones(len(spikes))*10, '.k')
 
         # add kernel
+        ker_all = kernel(all_times)
+        ker_pre = kernel(pre_times)
         ax.plot(all_times, kernel(all_times))
         ax.plot(pre_times, kernel(pre_times))
 
         # add percentiles
-        ax.plot(times, [i_percentile] * len(times))
-        ax.plot(times, [e_percentile] * len(times))
+        #ax.plot(times, [i_percentile] * len(times))
+        #ax.plot(times, [e_percentile] * len(times))
 
         # descriptos
         ax.set_xlabel("Times [1/Hz]")
    
-        ax.set_ylim((0, 50))
+
+        ax.set_ylim((0, max((max(ker_all), max(ker_pre)))*1.1))
 
         return
 
@@ -634,7 +1026,7 @@ def compute_kde_spikes(spikes: list, std: str, window: float, percentile=95, \
         plt.plot(times, [i_percentile] * len(times))
         plt.plot(times, [e_percentile] * len(times))
         plt.show()
-    
+   
     if plot_ax:
 
         if verbose:
@@ -648,8 +1040,10 @@ def compute_kde_spikes(spikes: list, std: str, window: float, percentile=95, \
             ax.plot(spikes, np.ones(len(spikes))*10, '.k')
 
         # add kernel
-        ax.plot(all_times, kernel(all_times))
-        ax.plot(pre_times, kernel(pre_times))
+        ker_all = kernel(all_times)
+        ker_pre = kernel(pre_times)
+        ax.plot(all_times, ker_all)
+        ax.plot(pre_times, ker_pre)
 
         # add percentiles
         ax.plot(times, [i_percentile] * len(times))
@@ -657,9 +1051,12 @@ def compute_kde_spikes(spikes: list, std: str, window: float, percentile=95, \
 
         # descriptos
         ax.set_xlabel("Times [1/Hz]")
-    
-        return
+        
+        ax.set_ylabel("spikes/s")
+        height = max((max(ker_all), max(ker_pre)))
+        ax.set_ylim((0, height*1.1))
+        return height
 
-    return times, spikes, kernel, e_percentile, i_percentile
+    return  times, spikes, kernel, e_percentile, i_percentile
 
 

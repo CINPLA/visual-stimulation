@@ -214,6 +214,7 @@ def _get_channel_groups(data_path):
                     channel_groups.append(int(chname.split('_')[-1]))
     return channel_groups
 
+
 def _get_sample_rate(data_path, default_sample_rate=30000*pq.Hz):
     f = exdir.File(str(data_path), 'r', plugins=[exdir.plugins.quantities])
     sr = default_sample_rate
@@ -250,6 +251,7 @@ def get_stimulus_trials(exdir_path, stimulus_epoch):
     stim_trials = _make_stimulus_trials(ch_grps_sptrs, stimulus_epoch)
 
     return stim_trials
+
 
 def _make_stimulus_trials(ch_grps_sptrs, stim_epoch):
     """
@@ -435,6 +437,7 @@ def make_stimulus_off_epoch(epo, include_boundary=False):
 
     return off_epoch
 
+
 def find_epoch_difference(ep0, ep1):
     # create intervaltree for each epoch
     tree = [it(), it()]
@@ -445,6 +448,7 @@ def find_epoch_difference(ep0, ep1):
         for t, d in zip(ts, durs):
             t.addi(t, t+d, _)
     diff = tree[0] - tree[1]
+
 
 def _return_index_in_target_epoch(ep0, ep1):
     """
