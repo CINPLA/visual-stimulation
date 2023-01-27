@@ -108,6 +108,7 @@ def load_epochs(data_path):
                     epochs.append(epo)
     return epochs
 
+
 def _read_epoch(exdir_file, path, lazy=False):
     # TODO: add test
     group = exdir_file[path]

@@ -4,4 +4,4 @@ from visualstimulation import helper
 from visualstimulation import plot
 from visualstimulation import utils
 from visualstimulation import extra
-
+from visualstimulation import extra2
