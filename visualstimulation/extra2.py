@@ -465,6 +465,7 @@ def total_length(X:  np.ndarray, Y:  np.ndarray):
         
     return length
 
+
 def binned_speed(X:  np.ndarray, Y:  np.ndarray, T:  np.ndarray, nbins: int):
 
     """
@@ -590,6 +591,7 @@ def plot_binned_speed(tracking_data: dict, nbins: int, title="", save=False, fig
     if save and figpath:
         name = f"/{title}_speed_{idx}.png"
         fig.savefig(figpath + name)
+        print(f"{name} saved! @{figpath}")
 
     if return_data:
         return avg_speed_unif, tot_len 
